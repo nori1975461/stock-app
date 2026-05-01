@@ -71,16 +71,19 @@ function doGet(e) {
 
 function getJapaneseName(ticker) {
   try {
-    const url = 'https://query1.finance.yahoo.com/v1/finance/search?q='
+    const now = Math.floor(Date.now() / 1000)
+    const url = 'https://query.finance.yahoo.co.jp/v8/finance/chart/'
       + encodeURIComponent(ticker)
-      + '&lang=ja&region=JP&quotesCount=1&newsCount=0'
+      + '?interval=1d&period1=' + (now - 86400 * 7)
+      + '&period2=' + now
     const res = UrlFetchApp.fetch(url, {
       muteHttpExceptions: true,
       headers: { 'User-Agent': 'Mozilla/5.0' }
     })
     const json = JSON.parse(res.getContentText())
-    if (json.quotes && json.quotes.length > 0) {
-      return json.quotes[0].shortname || json.quotes[0].longname || null
+    if (json.chart && json.chart.result && json.chart.result.length > 0) {
+      const meta = json.chart.result[0].meta
+      return meta.shortName || meta.longName || null
     }
   } catch (e) {
     console.error('日本語名取得エラー:', e)
