@@ -23,7 +23,7 @@ function doGet(e) {
       + encodeURIComponent(ticker)
       + '?interval=1d&period1=' + startDate
       + '&period2=' + endDate
-      + '&events=history&lang=ja&region=JP'
+      + '&events=history'
 
     const res = UrlFetchApp.fetch(url, {
       muteHttpExceptions: true,
@@ -50,10 +50,16 @@ function doGet(e) {
       })
       .filter(function(p) { return p.close !== null && p.close !== undefined })
 
+    var displayName = meta.shortName || meta.longName || ticker
+    if (ticker.toUpperCase().slice(-2) === '.T') {
+      var jaName = getJapaneseName(ticker)
+      if (jaName) displayName = jaName
+    }
+
     return makeResponse({
       ticker: ticker,
       currency: meta.currency,
-      name: meta.shortName || meta.longName || ticker,
+      name: displayName,
       prices: prices
     })
 
@@ -61,6 +67,25 @@ function doGet(e) {
     console.error(err)
     return makeResponse({ error: 'データの取得に失敗しました。しばらく経ってから再試行してください' })
   }
+}
+
+function getJapaneseName(ticker) {
+  try {
+    const url = 'https://query1.finance.yahoo.com/v1/finance/search?q='
+      + encodeURIComponent(ticker)
+      + '&lang=ja&region=JP&quotesCount=1&newsCount=0'
+    const res = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    })
+    const json = JSON.parse(res.getContentText())
+    if (json.quotes && json.quotes.length > 0) {
+      return json.quotes[0].shortname || json.quotes[0].longname || null
+    }
+  } catch (e) {
+    console.error('日本語名取得エラー:', e)
+  }
+  return null
 }
 
 function makeResponse(data) {
