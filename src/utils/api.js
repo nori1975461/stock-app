@@ -7,10 +7,14 @@ export async function fetchStockData(symbol, apiKey) {
   const json = await res.json()
 
   if (json['Error Message']) throw new Error('銘柄コードが見つかりません。ティッカーシンボルを確認してください。')
-  if (json['Note'] || json['Information']) throw new Error('APIレート制限に達しました。しばらく後でお試しください（無料枠: 25回/日）。')
 
   const timeSeries = json['Time Series (Daily)']
-  if (!timeSeries) throw new Error('データを取得できませんでした。')
+
+  if (!timeSeries) {
+    if (json['Note']) throw new Error('APIレート制限に達しました（1分5回上限）。しばらく後でお試しください。')
+    if (json['Information']) throw new Error('APIキーが無効か、1日の上限（25回）に達しました。キーを確認してください。')
+    throw new Error('データを取得できませんでした。')
+  }
 
   return Object.entries(timeSeries)
     .map(([date, v]) => ({ date, close: parseFloat(v['4. close']) }))
