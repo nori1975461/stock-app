@@ -10,7 +10,7 @@ async function fetchViaGAS(symbol, gasUrl) {
 
 async function fetchViaAlphaVantage(symbol, apiKey) {
   if (!apiKey) throw new Error('GAS URL または Alpha Vantage APIキーを入力してください。')
-  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact`
+  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(apiKey)}&outputsize=compact`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`APIエラー: ${res.status}`)
   const json = await res.json()
