@@ -13,7 +13,7 @@
 
 function doGet(e) {
   const ticker = e.parameter.ticker || 'AAPL'
-  const days = parseInt(e.parameter.days) || 120
+  const days = Math.min(Math.max(parseInt(e.parameter.days) || 120, 1), 365)
 
   try {
     const endDate = Math.floor(Date.now() / 1000)
@@ -33,7 +33,7 @@ function doGet(e) {
     const json = JSON.parse(res.getContentText())
 
     if (!json.chart || !json.chart.result || json.chart.result.length === 0) {
-      return makeResponse({ error: '銘柄が見つかりません: ' + ticker })
+      return makeResponse({ error: '指定された銘柄のデータが見つかりませんでした' })
     }
 
     const result = json.chart.result[0]
@@ -57,7 +57,8 @@ function doGet(e) {
     })
 
   } catch (err) {
-    return makeResponse({ error: err.toString() })
+    console.error(err)
+    return makeResponse({ error: 'データの取得に失敗しました。しばらく経ってから再試行してください' })
   }
 }
 
