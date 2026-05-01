@@ -243,8 +243,8 @@ export default function App() {
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={result.chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#a07060' }} interval="preserveStartEnd" />
-                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#a07060' }} width={60} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#555555' }} interval="preserveStartEnd" />
+                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#555555' }} width={60} />
                 <Tooltip />
                 <Legend />
                 <Line type="monotone" dataKey="price" stroke="#4f8ef7" dot={false} name="終値" strokeWidth={2} />
