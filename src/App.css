@@ -2,8 +2,8 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #191e2e;
-  color: #dde2ed;
+  background: #f5ede5;
+  color: #1e1010;
   min-height: 100vh;
 }
 
@@ -17,17 +17,17 @@ h1 {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 20px;
-  color: #c9a96e;
+  color: #8c1c2a;
   letter-spacing: 0.06em;
 }
 
 .card {
-  background: #222840;
+  background: #fffaf7;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 20px rgba(140,28,42,0.1);
   margin-bottom: 20px;
-  border: 1px solid #333d5a;
+  border: 1px solid #e8d5cc;
 }
 
 .field {
@@ -40,33 +40,33 @@ h1 {
 .field label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #7a85a0;
+  color: #6a3a3a;
 }
 
 .field input, .field select {
   padding: 10px 12px;
-  border: 1px solid #3a4468;
+  border: 1px solid #d9b8b0;
   border-radius: 8px;
   font-size: 1rem;
   outline: none;
   transition: border-color 0.2s;
-  background: #2c3452;
-  color: #dde2ed;
+  background: #fff5f2;
+  color: #1e1010;
 }
 
 .field input:focus, .field select:focus {
-  border-color: #c9a96e;
+  border-color: #8c1c2a;
 }
 
-.field input::placeholder { color: #3e4860; }
+.field input::placeholder { color: #c0a09a; }
 
 .field select option {
-  background: #2c3452;
-  color: #dde2ed;
+  background: #fff5f2;
+  color: #1e1010;
 }
 
-.hint { font-size: 0.78rem; color: #4e5870; }
-.hint a { color: #c9a96e; }
+.hint { font-size: 0.78rem; color: #a07060; }
+.hint a { color: #8c1c2a; }
 
 .row {
   display: grid;
@@ -77,8 +77,8 @@ h1 {
 .btn {
   width: 100%;
   padding: 12px;
-  background: #c9a96e;
-  color: #0e1117;
+  background: #8c1c2a;
+  color: #fff;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
@@ -88,13 +88,13 @@ h1 {
   letter-spacing: 0.04em;
 }
 
-.btn:hover:not(:disabled) { background: #b5924a; }
-.btn:disabled { background: #2e2810; color: #5a4e28; cursor: not-allowed; }
+.btn:hover:not(:disabled) { background: #6e1420; }
+.btn:disabled { background: #d4a8a8; color: #fff; cursor: not-allowed; }
 
 .error {
-  background: #1e0e0e;
-  border: 1px solid #5c2020;
-  color: #e08080;
+  background: #fff0f0;
+  border: 1px solid #e8a0a0;
+  color: #8c1c2a;
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 20px;
@@ -110,20 +110,20 @@ h1 {
   padding: 16px 0 20px;
 }
 
-.direction.up { color: #ff7070; }
-.direction.down { color: #5aaeff; }
+.direction.up { color: #c0392b; }
+.direction.down { color: #2471a3; }
 
 .arrow { font-size: 2.4rem; line-height: 1; }
 .label { font-size: 1.8rem; font-weight: 700; }
-.confidence { font-size: 1rem; color: #5a6480; margin-left: 4px; }
+.confidence { font-size: 1rem; color: #a07060; margin-left: 4px; }
 
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   padding: 16px 0;
-  border-top: 1px solid #2a3048;
-  border-bottom: 1px solid #2a3048;
+  border-top: 1px solid #e8d5cc;
+  border-bottom: 1px solid #e8d5cc;
   margin-bottom: 16px;
 }
 
@@ -134,20 +134,20 @@ h1 {
   text-align: center;
 }
 
-.metric span { font-size: 0.78rem; color: #5a6480; }
-.metric strong { font-size: 1rem; font-weight: 700; color: #dde2ed; }
+.metric span { font-size: 0.78rem; color: #a07060; }
+.metric strong { font-size: 1rem; font-weight: 700; color: #1e1010; }
 
-.signals h3 { font-size: 0.85rem; color: #5a6480; margin-bottom: 8px; }
+.signals h3 { font-size: 0.85rem; color: #a07060; margin-bottom: 8px; }
 .signals ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.signals li { font-size: 0.88rem; color: #9aa0b8; padding-left: 12px; position: relative; }
-.signals li::before { content: '・'; position: absolute; left: 0; color: #c9a96e; }
+.signals li { font-size: 0.88rem; color: #3a2020; padding-left: 12px; position: relative; }
+.signals li::before { content: '・'; position: absolute; left: 0; color: #8c1c2a; }
 
 .chart-wrap { margin-top: 20px; }
 
 .disclaimer {
   margin-top: 16px;
   font-size: 0.75rem;
-  color: #3e4860;
+  color: #c0a09a;
   text-align: center;
 }
 
@@ -155,8 +155,8 @@ h1 {
   display: inline-block;
   font-size: 0.72rem;
   font-weight: 600;
-  background: #1a2a1a;
-  color: #6aaf6a;
+  background: #fde8e8;
+  color: #8c1c2a;
   border-radius: 4px;
   padding: 1px 6px;
   margin-left: 6px;
@@ -164,14 +164,14 @@ h1 {
 }
 
 .badge.gray {
-  background: #2c3452;
-  color: #5a6480;
+  background: #f0e8e4;
+  color: #a07060;
 }
 
 .divider {
   text-align: center;
   font-size: 0.85rem;
-  color: #2e3650;
+  color: #c0a09a;
   margin: 4px 0 16px;
   position: relative;
 }
@@ -182,7 +182,7 @@ h1 {
   top: 50%;
   width: 42%;
   height: 1px;
-  background: #2a3048;
+  background: #e8d5cc;
 }
 
 .divider::before { left: 0; }
@@ -194,7 +194,7 @@ h1 {
   font-size: 1rem;
   font-weight: 700;
   margin-bottom: 12px;
-  color: #c9a96e;
+  color: #8c1c2a;
 }
 
 .guide ol {
@@ -206,23 +206,23 @@ h1 {
 
 .guide li {
   font-size: 0.88rem;
-  color: #7a85a0;
+  color: #6a3a3a;
   line-height: 1.5;
 }
 
-.guide a { color: #c9a96e; }
+.guide a { color: #8c1c2a; }
 .guide code {
-  background: #2c3452;
+  background: #f5ede5;
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 0.85rem;
-  color: #a0b0cc;
+  color: #6a3a3a;
 }
 
 .result-ticker-label {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #5a6480;
+  color: #a07060;
   margin-bottom: 2px;
   letter-spacing: 0.05em;
 }
@@ -230,7 +230,7 @@ h1 {
 .result-company-name {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #dde2ed;
+  color: #1e1010;
   margin-bottom: 8px;
 }
 
@@ -238,7 +238,7 @@ h1 {
   font-size: 1rem;
   font-weight: 700;
   margin-bottom: 16px;
-  color: #c9a96e;
+  color: #8c1c2a;
   letter-spacing: 0.04em;
 }
 
@@ -254,31 +254,31 @@ h1 {
   align-items: center;
   gap: 16px;
   padding: 14px 16px;
-  border: 1px solid #333d5a;
+  border: 1px solid #e8d5cc;
   border-radius: 10px;
-  background: #2c3452;
+  background: #fff5f2;
 }
 
 .rank-card.winner {
-  border-color: #c9a96e;
-  background: #1c1808;
+  border-color: #8c1c2a;
+  background: #fff0ee;
 }
 
 .rank-card.selected {
-  border-color: #4a7acc;
-  background: #0e1828;
+  border-color: #2471a3;
+  background: #f0f5ff;
 }
 
 .rank-number {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #3e4860;
+  color: #c0a09a;
   width: 28px;
   text-align: center;
   flex-shrink: 0;
 }
 
-.rank-card.winner .rank-number { color: #c9a96e; }
+.rank-card.winner .rank-number { color: #8c1c2a; }
 
 .rank-body {
   flex: 1;
@@ -298,37 +298,37 @@ h1 {
 .rank-ticker.clickable { cursor: pointer; }
 
 .rank-ticker.clickable:hover .rank-ticker-code {
-  color: #c9a96e;
+  color: #8c1c2a;
   text-decoration: underline;
 }
 
 .rank-ticker-code {
   font-size: 1rem;
   font-weight: 700;
-  color: #dde2ed;
+  color: #1e1010;
 }
 
 .rank-company-name {
   font-size: 0.78rem;
-  color: #5a6480;
+  color: #a07060;
   font-weight: 400;
 }
 
 .rank-direction { font-size: 0.9rem; font-weight: 600; }
-.rank-direction.up { color: #ff7070; }
-.rank-direction.down { color: #5aaeff; }
+.rank-direction.up { color: #c0392b; }
+.rank-direction.down { color: #2471a3; }
 
 .rank-meta {
   display: flex;
   gap: 12px;
   font-size: 0.82rem;
-  color: #5a6480;
+  color: #a07060;
   margin-left: auto;
 }
 
-.rank-error { font-size: 0.82rem; color: #e08080; }
+.rank-error { font-size: 0.82rem; color: #8c1c2a; }
 
-.detail-card { border-top: 3px solid #c9a96e; }
+.detail-card { border-top: 3px solid #8c1c2a; }
 
 .detail-header {
   display: flex;
@@ -339,18 +339,18 @@ h1 {
 
 .btn-close {
   background: none;
-  border: 1px solid #3a4468;
+  border: 1px solid #d9b8b0;
   border-radius: 6px;
   padding: 4px 10px;
   font-size: 0.82rem;
-  color: #5a6480;
+  color: #a07060;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .btn-close:hover {
-  background: #2c3452;
-  color: #dde2ed;
+  background: #f5ede5;
+  color: #1e1010;
 }
 
 @media (max-width: 480px) {
