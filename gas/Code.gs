@@ -23,7 +23,7 @@ function doGet(e) {
       + encodeURIComponent(ticker)
       + '?interval=1d&period1=' + startDate
       + '&period2=' + endDate
-      + '&events=history'
+      + '&events=history&lang=ja&region=JP'
 
     const res = UrlFetchApp.fetch(url, {
       muteHttpExceptions: true,
