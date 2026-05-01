@@ -6,6 +6,69 @@ import { predict } from './utils/prediction'
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
 const MAX_TICKERS = 5
 
+function DetailCard({ item, onClose }) {
+  const p = item.prediction
+  return (
+    <div className="card result detail-card">
+      <div className="detail-header">
+        <div>
+          <div className="result-ticker-label">{item.ticker}</div>
+          {item.name && <div className="result-company-name">{item.name}</div>}
+        </div>
+        <button className="btn-close" onClick={onClose}>✕ 閉じる</button>
+      </div>
+
+      <div className={`direction ${p.direction === 'UP' ? 'up' : 'down'}`}>
+        <span className="arrow">{p.direction === 'UP' ? '▲' : '▼'}</span>
+        <span className="label">{p.direction === 'UP' ? '上昇傾向' : '下降傾向'}</span>
+        <span className="confidence">確信度 {p.confidence}%</span>
+      </div>
+
+      <div className="metrics">
+        <div className="metric">
+          <span>現在値</span>
+          <strong>{p.lastClose.toFixed(2)}</strong>
+        </div>
+        <div className="metric">
+          <span>MA5</span>
+          <strong>{p.ma5 ?? '-'}</strong>
+        </div>
+        <div className="metric">
+          <span>MA20</span>
+          <strong>{p.ma20 ?? '-'}</strong>
+        </div>
+        <div className="metric">
+          <span>RSI(14)</span>
+          <strong>{p.rsi ?? '-'}</strong>
+        </div>
+      </div>
+
+      <div className="signals">
+        <h3>判定根拠</h3>
+        <ul>
+          {p.signals.map((s, i) => <li key={i}>{s}</li>)}
+        </ul>
+      </div>
+
+      <div className="chart-wrap">
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={p.chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+            <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11 }} width={60} />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="price" stroke="#4f8ef7" dot={false} name="終値" strokeWidth={2} />
+            <Line type="monotone" dataKey="MA5" stroke="#f7a54f" dot={false} name="MA5" strokeWidth={1.5} strokeDasharray="4 2" />
+            <Line type="monotone" dataKey="MA20" stroke="#e74c4c" dot={false} name="MA20" strokeWidth={1.5} strokeDasharray="4 2" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
+    </div>
+  )
+}
+
 export default function App() {
   const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('gas_url') || '')
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('av_api_key') || '')
@@ -15,6 +78,7 @@ export default function App() {
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
   const [rankingResults, setRankingResults] = useState(null)
+  const [selectedDetail, setSelectedDetail] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -39,11 +103,12 @@ export default function App() {
     setError(null)
     setResult(null)
     setRankingResults(null)
+    setSelectedDetail(null)
 
     if (tickerList.length === 1) {
       try {
-        const data = await fetchStockData(tickerList[0], { gasUrl: gasUrl.trim(), apiKey: apiKey.trim() })
-        setResult({ ticker: tickerList[0], ...predict(data, days) })
+        const { prices, name } = await fetchStockData(tickerList[0], { gasUrl: gasUrl.trim(), apiKey: apiKey.trim() })
+        setResult({ ticker: tickerList[0], name, ...predict(prices, days) })
       } catch (err) {
         setError(err.message)
       } finally {
@@ -57,7 +122,8 @@ export default function App() {
         const ranked = settled
           .map((r, i) => ({
             ticker: tickerList[i],
-            prediction: r.status === 'fulfilled' ? predict(r.value, days) : null,
+            name: r.status === 'fulfilled' ? r.value.name : null,
+            prediction: r.status === 'fulfilled' ? predict(r.value.prices, days) : null,
             error: r.status === 'rejected' ? r.reason.message : null,
           }))
           .sort((a, b) => {
@@ -72,6 +138,11 @@ export default function App() {
         setLoading(false)
       }
     }
+  }
+
+  const handleTickerClick = (item) => {
+    if (!item.prediction) return
+    setSelectedDetail(prev => prev?.ticker === item.ticker ? null : item)
   }
 
   return (
@@ -136,6 +207,7 @@ export default function App() {
       {result && (
         <div className="card result">
           <div className="result-ticker-label">{result.ticker}</div>
+          {result.name && <div className="result-company-name">{result.name}</div>}
           <div className={`direction ${result.direction === 'UP' ? 'up' : 'down'}`}>
             <span className="arrow">{result.direction === 'UP' ? '▲' : '▼'}</span>
             <span className="label">{result.direction === 'UP' ? '上昇傾向' : '下降傾向'}</span>
@@ -191,10 +263,16 @@ export default function App() {
           <h2 className="ranking-title">上昇予測ランキング</h2>
           <div className="ranking">
             {rankingResults.map((item, i) => (
-              <div key={item.ticker} className={`rank-card ${i === 0 ? 'winner' : ''}`}>
+              <div key={item.ticker} className={`rank-card ${i === 0 ? 'winner' : ''} ${selectedDetail?.ticker === item.ticker ? 'selected' : ''}`}>
                 <div className="rank-number">{RANK_LABELS[i]}</div>
                 <div className="rank-body">
-                  <div className="rank-ticker">{item.ticker}</div>
+                  <div
+                    className={`rank-ticker ${item.prediction ? 'clickable' : ''}`}
+                    onClick={() => handleTickerClick(item)}
+                  >
+                    <span className="rank-ticker-code">{item.ticker}</span>
+                    {item.name && <span className="rank-company-name">{item.name}</span>}
+                  </div>
                   {item.prediction ? (
                     <>
                       <div className={`rank-direction ${item.prediction.direction === 'UP' ? 'up' : 'down'}`}>
@@ -212,8 +290,12 @@ export default function App() {
               </div>
             ))}
           </div>
-          <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
+          <p className="disclaimer">※ ティッカーシンボルをクリックすると詳細を表示します。投資判断の最終責任はご自身にあります。</p>
         </div>
+      )}
+
+      {selectedDetail && (
+        <DetailCard item={selectedDetail} onClose={() => setSelectedDetail(null)} />
       )}
 
       <div className="card guide">

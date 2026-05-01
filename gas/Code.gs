@@ -53,6 +53,7 @@ function doGet(e) {
     return makeResponse({
       ticker: ticker,
       currency: meta.currency,
+      name: meta.shortName || meta.longName || ticker,
       prices: prices
     })
 

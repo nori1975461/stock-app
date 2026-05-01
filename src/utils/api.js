@@ -5,7 +5,10 @@ async function fetchViaGAS(symbol, gasUrl) {
   const json = await res.json()
   if (json.error) throw new Error(json.error)
   if (!json.prices || json.prices.length === 0) throw new Error('データが取得できませんでした。')
-  return json.prices.sort((a, b) => a.date.localeCompare(b.date))
+  return {
+    prices: json.prices.sort((a, b) => a.date.localeCompare(b.date)),
+    name: json.name || null,
+  }
 }
 
 async function fetchViaAlphaVantage(symbol, apiKey) {
@@ -21,9 +24,12 @@ async function fetchViaAlphaVantage(symbol, apiKey) {
     if (json['Information']) throw new Error('APIキーが無効か、1日の上限（25回）に達しました。キーを確認してください。')
     throw new Error('データを取得できませんでした。')
   }
-  return Object.entries(timeSeries)
-    .map(([date, v]) => ({ date, close: parseFloat(v['4. close']) }))
-    .sort((a, b) => a.date.localeCompare(b.date))
+  return {
+    prices: Object.entries(timeSeries)
+      .map(([date, v]) => ({ date, close: parseFloat(v['4. close']) }))
+      .sort((a, b) => a.date.localeCompare(b.date)),
+    name: null,
+  }
 }
 
 export async function fetchStockData(symbol, { gasUrl, apiKey }) {
