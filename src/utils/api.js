@@ -1,5 +1,5 @@
 export async function fetchStockData(symbol, apiKey) {
-  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=full`
+  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact`
 
   const res = await fetch(url)
   if (!res.ok) throw new Error(`APIエラー: ${res.status}`)
