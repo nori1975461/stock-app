@@ -4,6 +4,7 @@ import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
 
 export default function App() {
+  const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('gas_url') || '')
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('av_api_key') || '')
   const [symbol, setSymbol] = useState('AAPL')
   const [days, setDays] = useState(60)
@@ -13,16 +14,20 @@ export default function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!apiKey.trim()) {
-      setError('Alpha Vantage APIキーを入力してください。')
+    if (!gasUrl.trim() && !apiKey.trim()) {
+      setError('GAS URL または Alpha Vantage APIキーのどちらかを入力してください。')
       return
     }
-    localStorage.setItem('av_api_key', apiKey.trim())
+    if (gasUrl.trim()) localStorage.setItem('gas_url', gasUrl.trim())
+    if (apiKey.trim()) localStorage.setItem('av_api_key', apiKey.trim())
     setLoading(true)
     setError(null)
     setResult(null)
     try {
-      const data = await fetchStockData(symbol.trim().toUpperCase(), apiKey.trim())
+      const data = await fetchStockData(symbol.trim().toUpperCase(), {
+        gasUrl: gasUrl.trim(),
+        apiKey: apiKey.trim(),
+      })
       setResult(predict(data, days))
     } catch (err) {
       setError(err.message)
@@ -37,7 +42,20 @@ export default function App() {
 
       <form onSubmit={handleSubmit} className="card">
         <div className="field">
-          <label>Alpha Vantage APIキー</label>
+          <label>GAS URL <span className="badge">日本株・米国株対応</span></label>
+          <input
+            type="text"
+            value={gasUrl}
+            onChange={e => setGasUrl(e.target.value)}
+            placeholder="https://script.google.com/macros/s/..."
+          />
+          <span className="hint">GASをデプロイして取得したURLを貼り付けてください（設定方法は下記参照）</span>
+        </div>
+
+        <div className="divider">または</div>
+
+        <div className="field">
+          <label>Alpha Vantage APIキー <span className="badge gray">米国株のみ</span></label>
           <input
             type="text"
             value={apiKey}
@@ -56,7 +74,7 @@ export default function App() {
               type="text"
               value={symbol}
               onChange={e => setSymbol(e.target.value.toUpperCase())}
-              placeholder="例: AAPL / 7203.T"
+              placeholder="例: 5706.T / AAPL"
             />
           </div>
           <div className="field">
@@ -127,6 +145,18 @@ export default function App() {
           <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
         </div>
       )}
+
+      <div className="card guide">
+        <h2>GAS設定方法（日本株を使う場合）</h2>
+        <ol>
+          <li><a href="https://script.google.com" target="_blank" rel="noreferrer">script.google.com</a> を開く</li>
+          <li>「新しいプロジェクト」をクリック</li>
+          <li>GitHubの <code>gas/Code.gs</code> の内容をコピーして貼り付けて保存</li>
+          <li>「デプロイ」→「新しいデプロイ」→ 種類：「ウェブアプリ」を選択</li>
+          <li>「次のユーザーとして実行：自分」「アクセス：全員」に設定して「デプロイ」</li>
+          <li>表示されたURLを上の「GAS URL」欄に貼り付ける</li>
+        </ol>
+      </div>
     </div>
   )
 }

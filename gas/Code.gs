@@ -1,42 +1,68 @@
-// GAS代替バックエンド（Alpha Vantageの代わりに使う場合）
-// デプロイ方法:
-//   1. Google Apps Script (script.google.com) で新規プロジェクト作成
-//   2. このコードを貼り付けて保存
-//   3. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」
-//   4. 「次のユーザーとして実行: 自分」「アクセスできるユーザー: 全員」で公開
-//   5. 発行されたURLをsrc/utils/api.jsのGAS_URLに設定
+// 株価予測アプリ - GASバックエンド
+// Yahoo Finance からデータ取得（日本株・米国株両対応）
+//
+// デプロイ手順:
+//   1. https://script.google.com で新規プロジェクト作成
+//   2. このコードを貼り付けて保存（Ctrl+S）
+//   3. 「デプロイ」→「新しいデプロイ」をクリック
+//   4. 種類: 「ウェブアプリ」を選択
+//   5. 次のユーザーとして実行: 「自分」
+//   6. アクセスできるユーザー: 「全員」
+//   7. 「デプロイ」ボタンを押す
+//   8. 表示されたURLをアプリの「GAS URL」欄に貼り付ける
 
 function doGet(e) {
   const ticker = e.parameter.ticker || 'AAPL'
-  const days = parseInt(e.parameter.days) || 90
+  const days = parseInt(e.parameter.days) || 120
 
   try {
     const endDate = Math.floor(Date.now() / 1000)
-    const startDate = endDate - days * 24 * 60 * 60 * 2
+    const startDate = endDate - days * 24 * 60 * 60
 
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&period1=${startDate}&period2=${endDate}`
-    const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true })
+    const url = 'https://query1.finance.yahoo.com/v8/finance/chart/'
+      + encodeURIComponent(ticker)
+      + '?interval=1d&period1=' + startDate
+      + '&period2=' + endDate
+      + '&events=history'
+
+    const res = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    })
+
     const json = JSON.parse(res.getContentText())
+
+    if (!json.chart || !json.chart.result || json.chart.result.length === 0) {
+      return makeResponse({ error: '銘柄が見つかりません: ' + ticker })
+    }
 
     const result = json.chart.result[0]
     const timestamps = result.timestamp
     const closes = result.indicators.quote[0].close
+    const meta = result.meta
 
     const prices = timestamps
-      .map((ts, i) => ({
-        date: new Date(ts * 1000).toISOString().slice(0, 10),
-        close: closes[i],
-      }))
-      .filter(p => p.close !== null)
-      .slice(-days)
+      .map(function(ts, i) {
+        return {
+          date: new Date(ts * 1000).toISOString().slice(0, 10),
+          close: closes[i]
+        }
+      })
+      .filter(function(p) { return p.close !== null && p.close !== undefined })
 
-    const output = { ticker, prices }
-    return ContentService
-      .createTextOutput(JSON.stringify(output))
-      .setMimeType(ContentService.MimeType.JSON)
+    return makeResponse({
+      ticker: ticker,
+      currency: meta.currency,
+      prices: prices
+    })
+
   } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ error: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON)
+    return makeResponse({ error: err.toString() })
   }
+}
+
+function makeResponse(data) {
+  var output = ContentService.createTextOutput(JSON.stringify(data))
+  output.setMimeType(ContentService.MimeType.JSON)
+  return output
 }
