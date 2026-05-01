@@ -91,6 +91,7 @@ export function predict(allPrices, days) {
   return {
     direction,
     confidence,
+    score,
     lastClose,
     ma5: lastMA5 != null ? +lastMA5.toFixed(2) : null,
     ma20: lastMA20 != null ? +lastMA20.toFixed(2) : null,

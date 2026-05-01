@@ -3,14 +3,18 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } f
 import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
 
+const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
+const MAX_TICKERS = 5
+
 export default function App() {
   const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('gas_url') || '')
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('av_api_key') || '')
-  const [symbol, setSymbol] = useState('AAPL')
+  const [symbols, setSymbols] = useState('AAPL')
   const [days, setDays] = useState(60)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+  const [rankingResults, setRankingResults] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,19 +24,53 @@ export default function App() {
     }
     if (gasUrl.trim()) localStorage.setItem('gas_url', gasUrl.trim())
     if (apiKey.trim()) localStorage.setItem('av_api_key', apiKey.trim())
+
+    const tickerList = symbols.split(',')
+      .map(s => s.trim().toUpperCase())
+      .filter(Boolean)
+      .slice(0, MAX_TICKERS)
+
+    if (tickerList.length === 0) {
+      setError('ティッカーシンボルを入力してください。')
+      return
+    }
+
     setLoading(true)
     setError(null)
     setResult(null)
-    try {
-      const data = await fetchStockData(symbol.trim().toUpperCase(), {
-        gasUrl: gasUrl.trim(),
-        apiKey: apiKey.trim(),
-      })
-      setResult(predict(data, days))
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+    setRankingResults(null)
+
+    if (tickerList.length === 1) {
+      try {
+        const data = await fetchStockData(tickerList[0], { gasUrl: gasUrl.trim(), apiKey: apiKey.trim() })
+        setResult({ ticker: tickerList[0], ...predict(data, days) })
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    } else {
+      try {
+        const settled = await Promise.allSettled(
+          tickerList.map(ticker => fetchStockData(ticker, { gasUrl: gasUrl.trim(), apiKey: apiKey.trim() }))
+        )
+        const ranked = settled
+          .map((r, i) => ({
+            ticker: tickerList[i],
+            prediction: r.status === 'fulfilled' ? predict(r.value, days) : null,
+            error: r.status === 'rejected' ? r.reason.message : null,
+          }))
+          .sort((a, b) => {
+            if (!a.prediction) return 1
+            if (!b.prediction) return -1
+            return b.prediction.score - a.prediction.score
+          })
+        setRankingResults(ranked)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -69,13 +107,14 @@ export default function App() {
 
         <div className="row">
           <div className="field">
-            <label>ティッカーシンボル</label>
+            <label>ティッカーシンボル <span className="badge">最大{MAX_TICKERS}銘柄</span></label>
             <input
               type="text"
-              value={symbol}
-              onChange={e => setSymbol(e.target.value.toUpperCase())}
-              placeholder="例: 5706.T / AAPL"
+              value={symbols}
+              onChange={e => setSymbols(e.target.value.toUpperCase())}
+              placeholder="例: 5706.T, 7203.T, AAPL"
             />
+            <span className="hint">複数銘柄はカンマ区切りで入力（例: 5706.T, 7203.T）</span>
           </div>
           <div className="field">
             <label>分析期間</label>
@@ -96,6 +135,7 @@ export default function App() {
 
       {result && (
         <div className="card result">
+          <div className="result-ticker-label">{result.ticker}</div>
           <div className={`direction ${result.direction === 'UP' ? 'up' : 'down'}`}>
             <span className="arrow">{result.direction === 'UP' ? '▲' : '▼'}</span>
             <span className="label">{result.direction === 'UP' ? '上昇傾向' : '下降傾向'}</span>
@@ -142,6 +182,36 @@ export default function App() {
             </ResponsiveContainer>
           </div>
 
+          <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
+        </div>
+      )}
+
+      {rankingResults && (
+        <div className="card">
+          <h2 className="ranking-title">上昇予測ランキング</h2>
+          <div className="ranking">
+            {rankingResults.map((item, i) => (
+              <div key={item.ticker} className={`rank-card ${i === 0 ? 'winner' : ''}`}>
+                <div className="rank-number">{RANK_LABELS[i]}</div>
+                <div className="rank-body">
+                  <div className="rank-ticker">{item.ticker}</div>
+                  {item.prediction ? (
+                    <>
+                      <div className={`rank-direction ${item.prediction.direction === 'UP' ? 'up' : 'down'}`}>
+                        {item.prediction.direction === 'UP' ? '▲ 上昇傾向' : '▼ 下降傾向'}
+                      </div>
+                      <div className="rank-meta">
+                        <span>確信度 {item.prediction.confidence}%</span>
+                        <span>スコア {item.prediction.score > 0 ? '+' : ''}{item.prediction.score}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="rank-error">{item.error}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
           <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
         </div>
       )}
