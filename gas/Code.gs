@@ -70,28 +70,47 @@ function doGet(e) {
 }
 
 function getJapaneseName(ticker) {
+  const code = ticker.replace(/\.T$/i, '')
+  const debugInfo = {}
+
+  // 方法1: Yahoo Finance Japan 検索API
   try {
-    const code = ticker.replace(/\.T$/i, '')
-    // 株探（kabutan.jp）から日本語会社名を取得
+    const url = 'https://query.finance.yahoo.co.jp/v1/finance/search?q='
+      + encodeURIComponent(code)
+      + '&lang=ja-JP&region=JP&quotesCount=1&newsCount=0'
+    const res = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ja-JP,ja;q=0.9' }
+    })
+    const json = JSON.parse(res.getContentText())
+    debugInfo.search = JSON.stringify(json).substring(0, 200)
+    if (json.quotes && json.quotes.length > 0) {
+      const name = json.quotes[0].shortname || json.quotes[0].longname
+      if (name && /[぀-ヿ一-鿿]/.test(name)) return name
+    }
+  } catch (e) { debugInfo.searchError = e.toString() }
+
+  // 方法2: 株探スクレイピング
+  try {
     const url = 'https://kabutan.jp/stock/?code=' + code
     const res = UrlFetchApp.fetch(url, {
       muteHttpExceptions: true,
       followRedirects: true,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept-Language': 'ja-JP,ja;q=0.9'
-      }
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ja-JP,ja;q=0.9' }
     })
-    if (res.getResponseCode() !== 200) return null
-    const html = res.getContentText('UTF-8')
+    debugInfo.kabutanStatus = res.getResponseCode()
+    if (res.getResponseCode() === 200) {
+      const html = res.getContentText('UTF-8')
+      const titleTag = html.match(/<title>[^<]{1,80}/)
+      debugInfo.kabutanTitle = titleTag ? titleTag[0] : 'NO TITLE'
+      const match = html.match(/<title>\s*([^（(【|｜<]+)/)
+      if (match && match[1].trim() && /[぀-ヿ一-鿿]/.test(match[1])) {
+        return match[1].trim()
+      }
+    }
+  } catch (e) { debugInfo.kabutanError = e.toString() }
 
-    // タイトル形式: "三井金属鉱業（5706）の株価・業績..."
-    const match = html.match(/<title>\s*([^（(【|｜<]+)/)
-    if (match && match[1].trim()) return match[1].trim()
-
-  } catch (e) {
-    console.error('日本語名取得エラー:', e)
-  }
+  console.log('getJapaneseName debug: ' + JSON.stringify(debugInfo))
   return null
 }
 
