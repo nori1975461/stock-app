@@ -43,6 +43,16 @@ function DetailCard({ item, onClose }) {
         </div>
       </div>
 
+      {p.forecast && (
+        <div className="forecast">
+          <div className="forecast-label">3か月後の見通し</div>
+          <div className={`forecast-outlook ${p.forecast.outlook === 'LIKELY_UP' ? 'up' : p.forecast.outlook === 'LIKELY_DOWN' ? 'down' : 'uncertain'}`}>
+            {p.forecast.outlook === 'LIKELY_UP' ? '▲ 上昇の可能性あり' : p.forecast.outlook === 'LIKELY_DOWN' ? '▼ 下落リスクあり' : '━ 方向性は不透明'}
+          </div>
+          <p className="forecast-text">{p.forecast.text}</p>
+        </div>
+      )}
+
       <div className="signals">
         <h3>判定根拠</h3>
         <ul>
@@ -232,6 +242,16 @@ export default function App() {
               <strong>{result.rsi ?? '-'}</strong>
             </div>
           </div>
+
+          {result.forecast && (
+            <div className="forecast">
+              <div className="forecast-label">3か月後の見通し</div>
+              <div className={`forecast-outlook ${result.forecast.outlook === 'LIKELY_UP' ? 'up' : result.forecast.outlook === 'LIKELY_DOWN' ? 'down' : 'uncertain'}`}>
+                {result.forecast.outlook === 'LIKELY_UP' ? '▲ 上昇の可能性あり' : result.forecast.outlook === 'LIKELY_DOWN' ? '▼ 下落リスクあり' : '━ 方向性は不透明'}
+              </div>
+              <p className="forecast-text">{result.forecast.text}</p>
+            </div>
+          )}
 
           <div className="signals">
             <h3>判定根拠</h3>

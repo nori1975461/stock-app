@@ -104,19 +104,92 @@ h1 {
 
 .result {}
 
+@keyframes arrowBounceUp {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-10px) scale(1.2); }
+}
+
+@keyframes arrowBounceDown {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(10px) scale(1.2); }
+}
+
 .direction {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 0 20px;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  margin: 8px 0 20px;
 }
 
-.direction.up { color: #c0392b; }
-.direction.down { color: #2471a3; }
+.direction.up {
+  color: #c0392b;
+  background: linear-gradient(135deg, rgba(192,57,43,0.10) 0%, rgba(192,57,43,0.03) 100%);
+  border: 1.5px solid rgba(192,57,43,0.35);
+  box-shadow: 0 2px 18px rgba(192,57,43,0.14);
+}
 
-.arrow { font-size: 2.4rem; line-height: 1; }
+.direction.down {
+  color: #2471a3;
+  background: linear-gradient(135deg, rgba(36,113,163,0.10) 0%, rgba(36,113,163,0.03) 100%);
+  border: 1.5px solid rgba(36,113,163,0.35);
+  box-shadow: 0 2px 18px rgba(36,113,163,0.14);
+}
+
+.arrow {
+  font-size: 2.6rem;
+  line-height: 1;
+  display: inline-block;
+}
+
+.direction.up .arrow {
+  animation: arrowBounceUp 1.5s ease-in-out infinite;
+  text-shadow: 0 0 18px rgba(192,57,43,0.55);
+}
+
+.direction.down .arrow {
+  animation: arrowBounceDown 1.5s ease-in-out infinite;
+  text-shadow: 0 0 18px rgba(36,113,163,0.55);
+}
+
 .label { font-size: 1.8rem; font-weight: 700; }
 .confidence { font-size: 1rem; color: #555555; margin-left: 4px; }
+
+.forecast {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #fffaf0;
+  border: 1px solid #c9a96e;
+  border-left: 4px solid #c9a96e;
+}
+
+.forecast-label {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: #888888;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.forecast-outlook {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.forecast-outlook.up { color: #c0392b; }
+.forecast-outlook.down { color: #2471a3; }
+.forecast-outlook.uncertain { color: #888888; }
+
+.forecast-text {
+  font-size: 0.88rem;
+  color: #333333;
+  line-height: 1.65;
+  margin: 0;
+}
 
 .metrics {
   display: grid;
