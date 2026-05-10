@@ -51,6 +51,23 @@ function DetailCard({ item, onClose }) {
             {p.forecast.outlook === 'LIKELY_UP' ? '▲ 上昇の可能性あり' : p.forecast.outlook === 'LIKELY_DOWN' ? '▼ 下落リスクあり' : '━ 方向性は不透明'}
           </div>
           <p className="forecast-text">{p.forecast.text}</p>
+          {p.forecast.rsiDetail && (
+            <div className="rsi-detail">
+              <div className="rsi-detail-title">RSI指標の詳細</div>
+              <div className="rsi-detail-row">
+                <span className="rsi-detail-label">データ全体の基準</span>
+                <span className="rsi-detail-value">{p.forecast.rsiDetail.standard}</span>
+              </div>
+              <div className="rsi-detail-row">
+                <span className="rsi-detail-label">この株のRSI値</span>
+                <span className="rsi-detail-value highlight">{p.forecast.rsiDetail.value}</span>
+              </div>
+              <div className="rsi-detail-row">
+                <span className="rsi-detail-label">予測される結論</span>
+                <span className="rsi-detail-value">{p.forecast.rsiDetail.conclusion}</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -270,6 +287,23 @@ export default function App() {
                 {result.forecast.outlook === 'LIKELY_UP' ? '▲ 上昇の可能性あり' : result.forecast.outlook === 'LIKELY_DOWN' ? '▼ 下落リスクあり' : '━ 方向性は不透明'}
               </div>
               <p className="forecast-text">{result.forecast.text}</p>
+              {result.forecast.rsiDetail && (
+                <div className="rsi-detail">
+                  <div className="rsi-detail-title">RSI指標の詳細</div>
+                  <div className="rsi-detail-row">
+                    <span className="rsi-detail-label">データ全体の基準</span>
+                    <span className="rsi-detail-value">{result.forecast.rsiDetail.standard}</span>
+                  </div>
+                  <div className="rsi-detail-row">
+                    <span className="rsi-detail-label">この株のRSI値</span>
+                    <span className="rsi-detail-value highlight">{result.forecast.rsiDetail.value}</span>
+                  </div>
+                  <div className="rsi-detail-row">
+                    <span className="rsi-detail-label">予測される結論</span>
+                    <span className="rsi-detail-value">{result.forecast.rsiDetail.conclusion}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

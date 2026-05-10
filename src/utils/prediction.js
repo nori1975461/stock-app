@@ -142,7 +142,28 @@ export function predict(allPrices, days) {
       outlook = 'UNCERTAIN'
       text = `はっきりした値動きのパターンが見られず、3か月後の動きを予測しにくい状況です。もう少し様子を見てから判断するのもよいかもしれません。`
     }
-    forecast = { outlook, text, projectedChangePct: +projectedChangePct.toFixed(1) }
+    // RSI詳細説明（基準・この株の値・結論の3項目）
+    let rsiDetail = null
+    if (lastRSI !== null) {
+      const rsiValue = lastRSI.toFixed(1)
+      let rsiLabel, rsiConclusion
+      if (lastRSI < 30) {
+        rsiLabel = `${rsiValue}（売られすぎ水準）`
+        rsiConclusion = '売られすぎの状態が続いた後は値段が戻ることが多く、3か月後は値上がりのチャンスと判断できます。'
+      } else if (lastRSI > 70) {
+        rsiLabel = `${rsiValue}（買われすぎ水準）`
+        rsiConclusion = '買われすぎの状態では、利益を確定しようとする売りが増えやすく、3か月後は値下がりに注意が必要です。'
+      } else {
+        rsiLabel = `${rsiValue}（適正水準）`
+        rsiConclusion = '過熱感も売られすぎ感もなく、現時点ではRSIからの強い売買シグナルはありません。'
+      }
+      rsiDetail = {
+        standard: 'RSIは0〜100の数値で、株が「売られすぎ」か「買われすぎ」かを示す指標です。一般的に30以下で売られすぎ（割安の可能性）、70以上で買われすぎ（割高の可能性）と判断します。',
+        value: rsiLabel,
+        conclusion: rsiConclusion,
+      }
+    }
+    forecast = { outlook, text, projectedChangePct: +projectedChangePct.toFixed(1), rsiDetail }
   }
 
   return {
