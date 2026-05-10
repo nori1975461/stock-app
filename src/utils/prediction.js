@@ -119,28 +119,28 @@ export function predict(allPrices, days) {
     let outlook, text
     if (lastRSI !== null && lastRSI < 28) {
       outlook = 'LIKELY_UP'
-      text = `RSIが${lastRSI.toFixed(0)}と極端な売られ過ぎ水準にあります。大幅な下落の反動として、3か月後には反発・上昇する可能性があります。`
+      text = `この株は最近、売られすぎの状態にあります（RSI: ${lastRSI.toFixed(0)}）。売られすぎた後は値段が戻ることが多いため、3か月後には値上がりする可能性があります。ただし、あくまで参考の目安です。`
     } else if (lastRSI !== null && lastRSI > 72) {
       outlook = 'LIKELY_DOWN'
-      text = `RSIが${lastRSI.toFixed(0)}と買われ過ぎの過熱水準にあります。3か月後は利益確定売りによる調整・下落となる可能性があります。`
+      text = `この株は最近、買われすぎの状態にあります（RSI: ${lastRSI.toFixed(0)}）。買われすぎると、利益を確定しようとする売りが増えることが多く、3か月後には値下がりする可能性があります。ただし、あくまで参考の目安です。`
     } else if (isLongUp && isShortUp) {
       outlook = 'LIKELY_UP'
-      text = `直近・長期ともに上昇基調が継続しており、3か月後もさらなる上昇が見込まれます。`
+      text = `最近も、長い目でみても値段が上がり続けています。このまま上がる流れが続けば、3か月後もさらに値上がりする可能性があります。`
     } else if (isLongUp && !isShortUp) {
       outlook = 'LIKELY_UP'
-      text = `直近は下降局面ですが、長期トレンドは上向きを維持しています。3か月後には調整一巡後の回復・上昇の可能性があります。`
+      text = `最近は少し値下がりしていますが、長い目でみると上がる流れが続いています。一時的な値下がりの後、3か月後には値段が回復して上がる可能性があります。`
     } else if (isLongDown && isShortUp) {
       outlook = 'UNCERTAIN'
-      text = `直近は反発上昇中ですが、長期的な下降トレンドが続いています。3か月後も軟調な展開となるリスクがあります。`
+      text = `最近は少し値上がりしていますが、長い目でみると値下がりの流れが続いています。3か月後も値段が下がるリスクがあるため、注意が必要です。`
     } else if (isLongDown && !isShortUp) {
       outlook = 'LIKELY_DOWN'
-      text = `直近・長期ともに下降基調が続いており、3か月後も下落圧力が続く可能性があります。底打ちの兆候が見えるまで注意が必要です。`
+      text = `最近も、長い目でみても値段が下がり続けています。3か月後も引き続き値下がりする可能性があります。投資する場合は十分に慎重に判断してください。`
     } else if (score > 0) {
       outlook = 'UNCERTAIN'
-      text = `明確なトレンドは見られませんが、短期指標はやや上向きです。3か月後は小幅な上昇となる可能性があります。`
+      text = `はっきりした値動きのパターンは見られませんが、短期的な指標はやや上向きです。3か月後は小幅に値上がりする可能性があります。`
     } else {
       outlook = 'UNCERTAIN'
-      text = `明確なトレンドが読み取りにくい状況です。3か月後の方向性は不透明で、様子見が無難かもしれません。`
+      text = `はっきりした値動きのパターンが見られず、3か月後の動きを予測しにくい状況です。もう少し様子を見てから判断するのもよいかもしれません。`
     }
     forecast = { outlook, text, projectedChangePct: +projectedChangePct.toFixed(1) }
   }
