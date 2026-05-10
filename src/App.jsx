@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
+import { getSameIndustryRecommendations } from './utils/industries'
 
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
 const MAX_TICKERS = 5
@@ -53,6 +54,25 @@ function DetailCard({ item, onClose }) {
         </div>
       )}
 
+      {(() => {
+        const rec = getSameIndustryRecommendations(item.ticker)
+        if (!rec) return null
+        return (
+          <div className="recommendation">
+            <div className="recommendation-label">同業種のおすすめ銘柄 <span className="rec-industry">({rec.industry})</span></div>
+            <div className="recommendation-list">
+              {rec.stocks.map(s => (
+                <div key={s.ticker} className="recommendation-item">
+                  <span className="rec-ticker">{s.ticker}</span>
+                  {s.name && <span className="rec-name">{s.name}</span>}
+                </div>
+              ))}
+            </div>
+            <p className="recommendation-hint">※ 上記のティッカーシンボルを入力して比較できます</p>
+          </div>
+        )
+      })()}
+
       <div className="signals">
         <h3>判定根拠</h3>
         <ul>
@@ -75,7 +95,7 @@ function DetailCard({ item, onClose }) {
       </div>
 
       <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
-    </div>
+</div>
   )
 }
 
@@ -252,6 +272,25 @@ export default function App() {
               <p className="forecast-text">{result.forecast.text}</p>
             </div>
           )}
+
+          {(() => {
+            const rec = getSameIndustryRecommendations(result.ticker)
+            if (!rec) return null
+            return (
+              <div className="recommendation">
+                <div className="recommendation-label">同業種のおすすめ銘柄 <span className="rec-industry">({rec.industry})</span></div>
+                <div className="recommendation-list">
+                  {rec.stocks.map(s => (
+                    <div key={s.ticker} className="recommendation-item">
+                      <span className="rec-ticker">{s.ticker}</span>
+                      {s.name && <span className="rec-name">{s.name}</span>}
+                    </div>
+                  ))}
+                </div>
+                <p className="recommendation-hint">※ 上記のティッカーシンボルを入力して比較できます</p>
+              </div>
+            )
+          })()}
 
           <div className="signals">
             <h3>判定根拠</h3>
