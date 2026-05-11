@@ -483,6 +483,232 @@ h1 {
   box-shadow: 0 3px 10px rgba(0,0,0,0.15);
 }
 
+/* ─── 日経平均パネル ─────────────────────── */
+.nikkei-panel { border-top: 4px solid #1a3a6b; }
+
+.nikkei-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.nikkei-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3a6b;
+  letter-spacing: 0.03em;
+}
+
+.nikkei-subtitle {
+  font-size: 0.75rem;
+  color: #555555;
+  margin-top: 2px;
+}
+
+.btn-nikkei {
+  padding: 8px 18px;
+  background: linear-gradient(180deg, #1a3a6b 0%, #0e2044 100%);
+  color: #d4a84b;
+  border: 1.5px solid #8b6914;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+  transition: all 0.15s;
+}
+
+.btn-nikkei:hover:not(:disabled) {
+  background: linear-gradient(180deg, #2a4a8b 0%, #1a3a6b 100%);
+  transform: translateY(-1px);
+}
+
+.btn-nikkei:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.nikkei-error {
+  font-size: 0.85rem;
+  color: #8c1c2a;
+  margin-bottom: 10px;
+}
+
+.macro-score-row {
+  display: flex;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.macro-score-box {
+  flex: 1;
+  padding: 14px;
+  background: linear-gradient(135deg, #1a3a6b 0%, #0e2044 100%);
+  border-radius: 10px;
+  text-align: center;
+  color: #fff;
+}
+
+.macro-score-label {
+  font-size: 0.72rem;
+  color: #c9a96e;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.macro-score-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #d4a84b;
+  line-height: 1;
+}
+
+.macro-score-max { font-size: 1rem; color: #aaaaaa; }
+.macro-score-desc { font-size: 0.75rem; color: #c9a96e; margin-top: 4px; }
+
+.heat-box {
+  flex: 1;
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+  border: 1.5px solid;
+}
+
+.heat-box.overheat {
+  background: rgba(192,57,43,0.08);
+  border-color: #c0392b;
+}
+.heat-box.room {
+  background: rgba(36,113,163,0.08);
+  border-color: #2471a3;
+}
+.heat-box.neutral {
+  background: rgba(139,105,20,0.08);
+  border-color: #8b6914;
+}
+
+.heat-label {
+  font-size: 0.72rem;
+  color: #555555;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.heat-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.heat-box.overheat .heat-value { color: #c0392b; }
+.heat-box.room .heat-value { color: #2471a3; }
+.heat-box.neutral .heat-value { color: #8b6914; }
+
+.nikkei-weekly {
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  border-left: 5px solid;
+}
+.nikkei-weekly.up { background: rgba(192,57,43,0.06); border-color: #c0392b; }
+.nikkei-weekly.down { background: rgba(36,113,163,0.06); border-color: #2471a3; }
+.nikkei-weekly.uncertain { background: rgba(139,105,20,0.06); border-color: #8b6914; }
+
+.nikkei-weekly-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #7a5c10;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.nikkei-weekly-dir {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.nikkei-weekly.up .nikkei-weekly-dir { color: #c0392b; }
+.nikkei-weekly.down .nikkei-weekly-dir { color: #2471a3; }
+.nikkei-weekly.uncertain .nikkei-weekly-dir { color: #555555; }
+
+.nikkei-weekly-text {
+  font-size: 0.85rem;
+  color: #333333;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.macro-factors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.factors-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid;
+}
+.factors-title.bull { color: #c0392b; border-color: #c0392b; }
+.factors-title.bear { color: #2471a3; border-color: #2471a3; }
+
+.factor-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+.factor-item.bull { background: rgba(192,57,43,0.05); border-left: 3px solid #c0392b; }
+.factor-item.bear { background: rgba(36,113,163,0.05); border-left: 3px solid #2471a3; }
+
+.factor-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #111111;
+}
+.factor-text { font-size: 0.75rem; color: #444444; line-height: 1.5; }
+
+.macro-breakdown {
+  margin-bottom: 14px;
+}
+.macro-breakdown summary {
+  font-size: 0.78rem;
+  color: #7a5c10;
+  cursor: pointer;
+  padding: 6px 0;
+  font-weight: 600;
+}
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  margin-top: 8px;
+}
+.breakdown-table th {
+  background: #f0e8d8;
+  padding: 6px 8px;
+  text-align: left;
+  color: #555555;
+  font-weight: 700;
+}
+.breakdown-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e8dcc8;
+  color: #333333;
+  vertical-align: top;
+}
+.score-pos { color: #c0392b; font-weight: 700; }
+.score-neg { color: #2471a3; font-weight: 700; }
+
+@media (max-width: 480px) {
+  .macro-factors { grid-template-columns: 1fr; }
+  .macro-score-row { flex-direction: column; }
+}
+
 /* ─── RSI詳細説明 ────────────────────────── */
 .rsi-detail {
   margin-top: 14px;

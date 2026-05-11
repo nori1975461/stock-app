@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } f
 import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
 import { getSameIndustryRecommendations } from './utils/industries'
+import { MACRO_CONTEXT } from './utils/macroContext'
 
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
 const MAX_TICKERS = 5
@@ -113,6 +114,128 @@ function DetailCard({ item, onClose }) {
 
       <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
 </div>
+  )
+}
+
+function NikkeiPanel({ gasUrl, apiKey }) {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const mc = MACRO_CONTEXT
+
+  const heatLabel = mc.heatLevel === 'OVERHEAT' ? '⚠ 過熱ぎみ（短期）'
+    : mc.heatLevel === 'ROOM_TO_RISE' ? '↑ 上昇余地あり'
+    : '● 適正水準'
+  const heatClass = mc.heatLevel === 'OVERHEAT' ? 'overheat'
+    : mc.heatLevel === 'ROOM_TO_RISE' ? 'room'
+    : 'neutral'
+
+  const weeklyClass = mc.weeklyOutlook === 'UP' ? 'up'
+    : mc.weeklyOutlook === 'DOWN' ? 'down' : 'uncertain'
+  const weeklyLabel = mc.weeklyOutlook === 'UP' ? '▲ 上昇予測'
+    : mc.weeklyOutlook === 'DOWN' ? '▼ 下落予測' : '━ 方向性不透明（調整→もみ合い）'
+
+  const handleAnalyze = async () => {
+    if (!gasUrl && !apiKey) { setError('GAS URL を入力してください。'); return }
+    setLoading(true); setError(null)
+    try {
+      const { prices } = await fetchStockData('^N225', { gasUrl, apiKey })
+      const pred = predict(prices, 7)
+      setData(pred)
+    } catch (e) { setError(e.message) }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="card nikkei-panel">
+      <div className="nikkei-header">
+        <div>
+          <div className="nikkei-title">日経平均株価（^N225）1週間予測</div>
+          <div className="nikkei-subtitle">テクニカル指標 ＋ マクロ環境分析</div>
+        </div>
+        <button className="btn-nikkei" onClick={handleAnalyze} disabled={loading}>
+          {loading ? '取得中...' : '今すぐ分析'}
+        </button>
+      </div>
+
+      {error && <div className="nikkei-error">{error}</div>}
+
+      {data && (
+        <div className="nikkei-tech">
+          <div className={`direction ${data.direction === 'UP' ? 'up' : 'down'}`} style={{ margin: '12px 0' }}>
+            <span className="arrow">{data.direction === 'UP' ? '▲' : '▼'}</span>
+            <span className="label">{data.direction === 'UP' ? '上昇傾向' : '下降傾向'}</span>
+            <span className="confidence">確信度 {data.confidence}%</span>
+          </div>
+          <div className="metrics">
+            <div className="metric"><span>現在値</span><strong>{data.lastClose.toFixed(0)}円</strong></div>
+            <div className="metric"><span>MA5</span><strong>{data.ma5 ?? '-'}</strong></div>
+            <div className="metric"><span>MA20</span><strong>{data.ma20 ?? '-'}</strong></div>
+            <div className="metric"><span>RSI(14)</span><strong>{data.rsi ?? '-'}</strong></div>
+          </div>
+        </div>
+      )}
+
+      <div className="macro-score-row">
+        <div className="macro-score-box">
+          <div className="macro-score-label">マクロスコア</div>
+          <div className="macro-score-value">
+            {mc.totalScore > 0 ? '+' : ''}{mc.totalScore}
+            <span className="macro-score-max"> / {mc.maxScore}</span>
+          </div>
+          <div className="macro-score-desc">やや強気</div>
+        </div>
+        <div className={`heat-box ${heatClass}`}>
+          <div className="heat-label">過熱度判定</div>
+          <div className="heat-value">{heatLabel}</div>
+        </div>
+      </div>
+
+      <div className={`nikkei-weekly ${weeklyClass}`}>
+        <div className="nikkei-weekly-label">1週間の方向性</div>
+        <div className="nikkei-weekly-dir">{weeklyLabel}</div>
+        <p className="nikkei-weekly-text">{mc.weeklyText}</p>
+      </div>
+
+      <div className="macro-factors">
+        <div className="macro-factors-col">
+          <div className="factors-title bull">強気要因（Bull）</div>
+          {mc.factors.bull.map((f, i) => (
+            <div key={i} className="factor-item bull">
+              <span className="factor-label">{f.label}</span>
+              <span className="factor-text">{f.text}</span>
+            </div>
+          ))}
+        </div>
+        <div className="macro-factors-col">
+          <div className="factors-title bear">弱気要因（Bear）</div>
+          {mc.factors.bear.map((f, i) => (
+            <div key={i} className="factor-item bear">
+              <span className="factor-label">{f.label}</span>
+              <span className="factor-text">{f.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <details className="macro-breakdown">
+        <summary>スコア内訳を見る</summary>
+        <table className="breakdown-table">
+          <thead><tr><th>項目</th><th>スコア</th><th>根拠</th></tr></thead>
+          <tbody>
+            {mc.scoreBreakdown.map((r, i) => (
+              <tr key={i}>
+                <td>{r.item}</td>
+                <td className={r.score > 0 ? 'score-pos' : r.score < 0 ? 'score-neg' : ''}>{r.score > 0 ? '+' : ''}{r.score}</td>
+                <td>{r.reason}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+
+      <p className="disclaimer">調査日: {mc.researchDate}　※テクニカル指標・マクロ情報は参考目安です。投資判断の最終責任はご自身にあります。</p>
+    </div>
   )
 }
 
@@ -390,6 +513,8 @@ export default function App() {
       {selectedDetail && (
         <DetailCard item={selectedDetail} onClose={() => setSelectedDetail(null)} />
       )}
+
+      <NikkeiPanel gasUrl={gasUrl} apiKey={apiKey} />
 
       <div className="card guide">
         <h2>GAS設定方法（日本株を使う場合）</h2>
