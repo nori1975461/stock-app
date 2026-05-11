@@ -33,7 +33,7 @@ function linearRegressionSlope(values) {
   return den !== 0 ? num / den : 0
 }
 
-export function predict(allPrices, days) {
+export function predict(allPrices, days, macroAdjust = null) {
   const recent = allPrices.slice(-Math.max(days, 30))
   const closes = recent.map(p => p.close)
 
@@ -86,6 +86,14 @@ export function predict(allPrices, days) {
     } else {
       signals.push(`RSI ${lastRSI.toFixed(1)}：中立`)
     }
+  }
+
+  if (macroAdjust) {
+    const adj = Math.max(-2, Math.min(2, macroAdjust.score))
+    score += adj
+    if (adj > 0) signals.push(`マクロ環境【${macroAdjust.sector}】AI・世界経済が追い風（+${adj}）`)
+    else if (adj < 0) signals.push(`マクロ環境【${macroAdjust.sector}】向かい風あり（${adj}）`)
+    else signals.push(`マクロ環境【${macroAdjust.sector}】影響は中立（0）`)
   }
 
   const direction = score > 0 ? 'UP' : 'DOWN'

@@ -104,6 +104,11 @@ for (const [industry, codes] of Object.entries(GROUPS)) {
   }
 }
 
+export function getStockSector(ticker) {
+  const code = ticker.replace(/\.T$/i, '')
+  return CODE_TO_INDUSTRY[code] || null
+}
+
 export function getSameIndustryRecommendations(ticker) {
   const code = ticker.replace(/\.T$/i, '')
   const industry = CODE_TO_INDUSTRY[code]

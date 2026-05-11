@@ -814,6 +814,67 @@ h1 {
   margin: 0;
 }
 
+/* ─── 個別株マクロ環境セクション ─────────────────── */
+.macro-stock-section {
+  background: linear-gradient(135deg, #0d1b2e 0%, #162840 100%);
+  border: 1.5px solid #8b6914;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.macro-stock-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.macro-stock-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #d4a84b;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.macro-stock-sector {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e8d9a8;
+  background: rgba(212,168,75,0.15);
+  border: 1px solid rgba(212,168,75,0.3);
+  border-radius: 4px;
+  padding: 1px 8px;
+}
+
+.macro-stock-dir {
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+.macro-dir-up    { background: rgba(46,160,80,0.25);  color: #5fe08a; border: 1px solid rgba(46,160,80,0.4); }
+.macro-dir-down  { background: rgba(220,60,60,0.25);  color: #ff8080; border: 1px solid rgba(220,60,60,0.4); }
+.macro-dir-neutral{ background: rgba(180,180,180,0.2); color: #c0c0c0; border: 1px solid rgba(180,180,180,0.3); }
+
+.macro-stock-score {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-left: auto;
+}
+.macro-stock-score.pos  { color: #5fe08a; }
+.macro-stock-score.neg  { color: #ff8080; }
+.macro-stock-score.zero { color: #aaaaaa; }
+
+.macro-stock-signal {
+  font-size: 0.82rem;
+  color: #c8c8c8;
+  line-height: 1.6;
+  margin: 0;
+}
+
 @media (max-width: 480px) {
   .metrics { grid-template-columns: repeat(2, 1fr); }
   .row { grid-template-columns: 1fr; }

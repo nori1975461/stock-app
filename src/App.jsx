@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
-import { getSameIndustryRecommendations } from './utils/industries'
-import { MACRO_CONTEXT } from './utils/macroContext'
+import { getSameIndustryRecommendations, getStockSector } from './utils/industries'
+import { MACRO_CONTEXT, SECTOR_MACRO } from './utils/macroContext'
 
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
 const MAX_TICKERS = 5
@@ -71,6 +71,27 @@ function DetailCard({ item, onClose }) {
           )}
         </div>
       )}
+
+      {(() => {
+        const sector = getStockSector(item.ticker)
+        const sm = sector ? SECTOR_MACRO[sector] : null
+        if (!sm) return null
+        const dirLabel = sm.direction === 'UP' ? '▲ 強気' : sm.direction === 'DOWN' ? '▼ 弱気' : '━ 中立'
+        const dirClass = sm.direction === 'UP' ? 'macro-dir-up' : sm.direction === 'DOWN' ? 'macro-dir-down' : 'macro-dir-neutral'
+        return (
+          <div className="macro-stock-section">
+            <div className="macro-stock-header">
+              <span className="macro-stock-title">マクロ環境の影響</span>
+              <span className="macro-stock-sector">{sector}</span>
+              <span className={`macro-stock-dir ${dirClass}`}>{dirLabel}</span>
+              <span className={`macro-stock-score ${sm.score > 0 ? 'pos' : sm.score < 0 ? 'neg' : 'zero'}`}>
+                スコア {sm.score > 0 ? '+' : ''}{sm.score}
+              </span>
+            </div>
+            <p className="macro-stock-signal">{sm.signal}</p>
+          </div>
+        )
+      })()}
 
       {(() => {
         const rec = getSameIndustryRecommendations(item.ticker)
@@ -278,7 +299,9 @@ export default function App() {
     if (tickerList.length === 1) {
       try {
         const { prices, name } = await fetchStockData(tickerList[0], { gasUrl: gasUrl.trim(), apiKey: apiKey.trim() })
-        setResult({ ticker: tickerList[0], name, ...predict(prices, days) })
+        const sector0 = getStockSector(tickerList[0])
+        const macroAdjust0 = sector0 && SECTOR_MACRO[sector0] ? { sector: sector0, ...SECTOR_MACRO[sector0] } : null
+        setResult({ ticker: tickerList[0], name, ...predict(prices, days, macroAdjust0) })
       } catch (err) {
         setError(err.message)
       } finally {
@@ -290,12 +313,16 @@ export default function App() {
           tickerList.map(ticker => fetchStockData(ticker, { gasUrl: gasUrl.trim(), apiKey: apiKey.trim() }))
         )
         const ranked = settled
-          .map((r, i) => ({
-            ticker: tickerList[i],
-            name: r.status === 'fulfilled' ? r.value.name : null,
-            prediction: r.status === 'fulfilled' ? predict(r.value.prices, days) : null,
-            error: r.status === 'rejected' ? r.reason.message : null,
-          }))
+          .map((r, i) => {
+            const sec = getStockSector(tickerList[i])
+            const ma = sec && SECTOR_MACRO[sec] ? { sector: sec, ...SECTOR_MACRO[sec] } : null
+            return {
+              ticker: tickerList[i],
+              name: r.status === 'fulfilled' ? r.value.name : null,
+              prediction: r.status === 'fulfilled' ? predict(r.value.prices, days, ma) : null,
+              error: r.status === 'rejected' ? r.reason.message : null,
+            }
+          })
           .sort((a, b) => {
             if (!a.prediction) return 1
             if (!b.prediction) return -1
@@ -429,6 +456,27 @@ export default function App() {
               )}
             </div>
           )}
+
+          {(() => {
+            const sector = getStockSector(result.ticker)
+            const sm = sector ? SECTOR_MACRO[sector] : null
+            if (!sm) return null
+            const dirLabel = sm.direction === 'UP' ? '▲ 強気' : sm.direction === 'DOWN' ? '▼ 弱気' : '━ 中立'
+            const dirClass = sm.direction === 'UP' ? 'macro-dir-up' : sm.direction === 'DOWN' ? 'macro-dir-down' : 'macro-dir-neutral'
+            return (
+              <div className="macro-stock-section">
+                <div className="macro-stock-header">
+                  <span className="macro-stock-title">マクロ環境の影響</span>
+                  <span className="macro-stock-sector">{sector}</span>
+                  <span className={`macro-stock-dir ${dirClass}`}>{dirLabel}</span>
+                  <span className={`macro-stock-score ${sm.score > 0 ? 'pos' : sm.score < 0 ? 'neg' : 'zero'}`}>
+                    スコア {sm.score > 0 ? '+' : ''}{sm.score}
+                  </span>
+                </div>
+                <p className="macro-stock-signal">{sm.signal}</p>
+              </div>
+            )
+          })()}
 
           {(() => {
             const rec = getSameIndustryRecommendations(result.ticker)
