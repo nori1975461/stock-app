@@ -101,15 +101,15 @@ export function predict(allPrices, days) {
     }
   })
 
-  // 3か月後の見通し（線形回帰による長期トレンド分析）
+  // 1か月後の見通し（線形回帰による長期トレンド分析）
   let forecast = null
   const longData = allPrices.slice(-Math.min(90, allPrices.length))
   if (longData.length >= 20) {
     const longCloses = longData.map(p => p.close)
     const longSlope = linearRegressionSlope(longCloses)
     const midPrice = longCloses[Math.floor(longCloses.length / 2)]
-    // 約60営業日（3か月）後の予測変化率
-    const projectedChangePct = midPrice > 0 ? (longSlope * 60) / midPrice * 100 : 0
+    // 約20営業日（1か月）後の予測変化率
+    const projectedChangePct = midPrice > 0 ? (longSlope * 20) / midPrice * 100 : 0
 
     const shortCloses = allPrices.slice(-Math.min(20, allPrices.length)).map(p => p.close)
     const isShortUp = linearRegressionSlope(shortCloses) > 0
@@ -119,28 +119,28 @@ export function predict(allPrices, days) {
     let outlook, text
     if (lastRSI !== null && lastRSI < 28) {
       outlook = 'LIKELY_UP'
-      text = `この株は最近、売られすぎの状態にあります（RSI: ${lastRSI.toFixed(0)}）。売られすぎた後は値段が戻ることが多いため、3か月後には値上がりする可能性があります。ただし、あくまで参考の目安です。`
+      text = `この株は最近、売られすぎの状態にあります（RSI: ${lastRSI.toFixed(0)}）。売られすぎた後は値段が戻ることが多いため、1か月後には値上がりする可能性があります。ただし、あくまで参考の目安です。`
     } else if (lastRSI !== null && lastRSI > 72) {
       outlook = 'LIKELY_DOWN'
-      text = `この株は最近、買われすぎの状態にあります（RSI: ${lastRSI.toFixed(0)}）。買われすぎると、利益を確定しようとする売りが増えることが多く、3か月後には値下がりする可能性があります。ただし、あくまで参考の目安です。`
+      text = `この株は最近、買われすぎの状態にあります（RSI: ${lastRSI.toFixed(0)}）。買われすぎると、利益を確定しようとする売りが増えることが多く、1か月後には値下がりする可能性があります。ただし、あくまで参考の目安です。`
     } else if (isLongUp && isShortUp) {
       outlook = 'LIKELY_UP'
-      text = `最近も、長い目でみても値段が上がり続けています。このまま上がる流れが続けば、3か月後もさらに値上がりする可能性があります。`
+      text = `最近も、長い目でみても値段が上がり続けています。このまま上がる流れが続けば、1か月後もさらに値上がりする可能性があります。`
     } else if (isLongUp && !isShortUp) {
       outlook = 'LIKELY_UP'
-      text = `最近は少し値下がりしていますが、長い目でみると上がる流れが続いています。一時的な値下がりの後、3か月後には値段が回復して上がる可能性があります。`
+      text = `最近は少し値下がりしていますが、長い目でみると上がる流れが続いています。一時的な値下がりの後、1か月後には値段が回復して上がる可能性があります。`
     } else if (isLongDown && isShortUp) {
       outlook = 'UNCERTAIN'
-      text = `最近は少し値上がりしていますが、長い目でみると値下がりの流れが続いています。3か月後も値段が下がるリスクがあるため、注意が必要です。`
+      text = `最近は少し値上がりしていますが、長い目でみると値下がりの流れが続いています。1か月後も値段が下がるリスクがあるため、注意が必要です。`
     } else if (isLongDown && !isShortUp) {
       outlook = 'LIKELY_DOWN'
-      text = `最近も、長い目でみても値段が下がり続けています。3か月後も引き続き値下がりする可能性があります。投資する場合は十分に慎重に判断してください。`
+      text = `最近も、長い目でみても値段が下がり続けています。1か月後も引き続き値下がりする可能性があります。投資する場合は十分に慎重に判断してください。`
     } else if (score > 0) {
       outlook = 'UNCERTAIN'
-      text = `はっきりした値動きのパターンは見られませんが、短期的な指標はやや上向きです。3か月後は小幅に値上がりする可能性があります。`
+      text = `はっきりした値動きのパターンは見られませんが、短期的な指標はやや上向きです。1か月後は小幅に値上がりする可能性があります。`
     } else {
       outlook = 'UNCERTAIN'
-      text = `はっきりした値動きのパターンが見られず、3か月後の動きを予測しにくい状況です。もう少し様子を見てから判断するのもよいかもしれません。`
+      text = `はっきりした値動きのパターンが見られず、1か月後の動きを予測しにくい状況です。もう少し様子を見てから判断するのもよいかもしれません。`
     }
     // RSI詳細説明（基準・この株の値・結論の3項目）
     let rsiDetail = null
@@ -149,10 +149,10 @@ export function predict(allPrices, days) {
       let rsiLabel, rsiConclusion
       if (lastRSI < 30) {
         rsiLabel = `${rsiValue}（売られすぎ水準）`
-        rsiConclusion = '売られすぎの状態が続いた後は値段が戻ることが多く、3か月後は値上がりのチャンスと判断できます。'
+        rsiConclusion = '売られすぎの状態が続いた後は値段が戻ることが多く、1か月後は値上がりのチャンスと判断できます。'
       } else if (lastRSI > 70) {
         rsiLabel = `${rsiValue}（買われすぎ水準）`
-        rsiConclusion = '買われすぎの状態では、利益を確定しようとする売りが増えやすく、3か月後は値下がりに注意が必要です。'
+        rsiConclusion = '買われすぎの状態では、利益を確定しようとする売りが増えやすく、1か月後は値下がりに注意が必要です。'
       } else {
         rsiLabel = `${rsiValue}（適正水準）`
         rsiConclusion = '過熱感も売られすぎ感もなく、現時点ではRSIからの強い売買シグナルはありません。'

@@ -46,7 +46,7 @@ function DetailCard({ item, onClose }) {
 
       {p.forecast && (
         <div className="forecast">
-          <div className="forecast-label">3か月後の見通し</div>
+          <div className="forecast-label">1か月後の見通し</div>
           <div className={`forecast-outlook ${p.forecast.outlook === 'LIKELY_UP' ? 'up' : p.forecast.outlook === 'LIKELY_DOWN' ? 'down' : 'uncertain'}`}>
             {p.forecast.outlook === 'LIKELY_UP' ? '▲ 上昇の可能性あり' : p.forecast.outlook === 'LIKELY_DOWN' ? '▼ 下落リスクあり' : '━ 方向性は不透明'}
           </div>
@@ -120,7 +120,7 @@ export default function App() {
   const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('gas_url') || '')
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('av_api_key') || '')
   const [symbols, setSymbols] = useState('AAPL')
-  const [days, setDays] = useState(60)
+  const [days, setDays] = useState(14)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
@@ -237,9 +237,9 @@ export default function App() {
           <div className="field">
             <label>分析期間</label>
             <select value={days} onChange={e => setDays(Number(e.target.value))}>
-              <option value={30}>30日</option>
-              <option value={60}>60日</option>
-              <option value={90}>90日</option>
+              <option value={7}>1週間</option>
+              <option value={14}>2週間</option>
+              <option value={21}>3週間</option>
             </select>
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function App() {
 
           {result.forecast && (
             <div className="forecast">
-              <div className="forecast-label">3か月後の見通し</div>
+              <div className="forecast-label">1か月後の見通し</div>
               <div className={`forecast-outlook ${result.forecast.outlook === 'LIKELY_UP' ? 'up' : result.forecast.outlook === 'LIKELY_DOWN' ? 'down' : 'uncertain'}`}>
                 {result.forecast.outlook === 'LIKELY_UP' ? '▲ 上昇の可能性あり' : result.forecast.outlook === 'LIKELY_DOWN' ? '▼ 下落リスクあり' : '━ 方向性は不透明'}
               </div>
