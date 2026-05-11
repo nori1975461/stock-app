@@ -33,9 +33,54 @@ function linearRegressionSlope(values) {
   return den !== 0 ? num / den : 0
 }
 
+function calcEMA(prices, period) {
+  const k = 2 / (period + 1)
+  const result = new Array(prices.length)
+  result[0] = prices[0]
+  for (let i = 1; i < prices.length; i++) {
+    result[i] = prices[i] * k + result[i - 1] * (1 - k)
+  }
+  return result
+}
+
+function calcMACD(prices) {
+  if (prices.length < 35) return { macd: null, signal: null, histogram: null, prevHistogram: null }
+  const ema12 = calcEMA(prices, 12)
+  const ema26 = calcEMA(prices, 26)
+  const macdLine = ema12.map((v, i) => v - ema26[i])
+  const signalLine = calcEMA(macdLine, 9)
+  const last = prices.length - 1
+  const macd = macdLine[last]
+  const signal = signalLine[last]
+  const histogram = macd - signal
+  const prevHistogram = last > 0 ? macdLine[last - 1] - signalLine[last - 1] : null
+  return { macd, signal, histogram, prevHistogram }
+}
+
+function calcBollinger(prices, period = 20) {
+  const last = prices.length - 1
+  if (last < period - 1) return null
+  const slice = prices.slice(last - period + 1, last + 1)
+  const mean = slice.reduce((a, b) => a + b, 0) / period
+  const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period
+  const std = Math.sqrt(variance)
+  const upper = mean + 2 * std
+  const lower = mean - 2 * std
+  const position = std > 0 ? ((prices[last] - lower) / (upper - lower)) * 100 : 50
+  return { upper, middle: mean, lower, position: Math.max(0, Math.min(100, position)), std }
+}
+
+function calcROC(prices, period = 20) {
+  const last = prices.length - 1
+  if (last < period) return null
+  const prev = prices[last - period]
+  return prev > 0 ? ((prices[last] - prev) / prev) * 100 : null
+}
+
 export function predict(allPrices, days, macroAdjust = null) {
   const recent = allPrices.slice(-Math.max(days, 30))
   const closes = recent.map(p => p.close)
+  const allCloses = allPrices.map(p => p.close)
 
   const ma5 = calcMA(closes, 5)
   const ma20 = calcMA(closes, 20)
@@ -47,6 +92,11 @@ export function predict(allPrices, days, macroAdjust = null) {
   const lastRSI = rsiArr[last]
   const lastClose = closes[last]
   const prevClose5 = closes[last - 5] ?? closes[0]
+
+  // 拡張指標（全データで精度向上）
+  const macdData = calcMACD(allCloses)
+  const bollingerData = calcBollinger(allCloses)
+  const roc20 = calcROC(allCloses, 20)
 
   const signals = []
   let score = 0
@@ -88,6 +138,56 @@ export function predict(allPrices, days, macroAdjust = null) {
     }
   }
 
+  // MACD（トレンドの加速度）
+  if (macdData.macd !== null) {
+    const bullish = macdData.macd > macdData.signal
+    const accelerating = macdData.prevHistogram !== null &&
+      (bullish
+        ? macdData.histogram > macdData.prevHistogram
+        : macdData.histogram < macdData.prevHistogram)
+    if (bullish && accelerating) {
+      score += 2
+      signals.push('MACD強気シグナル：上昇加速中（ヒストグラム拡大）')
+    } else if (bullish) {
+      score += 1
+      signals.push('MACD：買いシグナル（MACDがシグナル線を上回る）')
+    } else if (!bullish && accelerating) {
+      score -= 2
+      signals.push('MACD弱気シグナル：下降加速中（ヒストグラム拡大）')
+    } else {
+      score -= 1
+      signals.push('MACD：売りシグナル（MACDがシグナル線を下回る）')
+    }
+  }
+
+  // ボリンジャーバンド（割安・割高ゾーン）
+  if (bollingerData !== null) {
+    const pos = bollingerData.position
+    if (pos < 20) {
+      score += 1
+      signals.push(`ボリンジャーバンド下限付近 ${pos.toFixed(0)}%（割安ゾーン：反発期待）`)
+    } else if (pos > 80) {
+      score -= 1
+      signals.push(`ボリンジャーバンド上限付近 ${pos.toFixed(0)}%（買われすぎゾーン：調整リスク）`)
+    } else {
+      signals.push(`ボリンジャーバンド中央付近 ${pos.toFixed(0)}%（適正ゾーン）`)
+    }
+  }
+
+  // 20日モメンタム（上昇の勢い）
+  if (roc20 !== null) {
+    if (roc20 > 5) {
+      score += 1
+      signals.push(`20日モメンタム +${roc20.toFixed(1)}%：強い上昇勢い`)
+    } else if (roc20 < -5) {
+      score -= 1
+      signals.push(`20日モメンタム ${roc20.toFixed(1)}%：下降勢い継続`)
+    } else {
+      signals.push(`20日モメンタム ${roc20 >= 0 ? '+' : ''}${roc20.toFixed(1)}%：中立`)
+    }
+  }
+
+  // マクロ調整（セクター別AI・経済環境）
   if (macroAdjust) {
     const adj = Math.max(-2, Math.min(2, macroAdjust.score))
     score += adj
@@ -97,7 +197,8 @@ export function predict(allPrices, days, macroAdjust = null) {
   }
 
   const direction = score > 0 ? 'UP' : 'DOWN'
-  const confidence = Math.min(50 + Math.abs(score) * 10, 85)
+  // スコアレンジ拡大（旧±5→新±11）に合わせて係数調整
+  const confidence = Math.min(50 + Math.abs(score) * 4, 92)
 
   const chartData = recent.slice(-days).map((p, i, arr) => {
     const idx = closes.length - arr.length + i
@@ -116,7 +217,6 @@ export function predict(allPrices, days, macroAdjust = null) {
     const longCloses = longData.map(p => p.close)
     const longSlope = linearRegressionSlope(longCloses)
     const midPrice = longCloses[Math.floor(longCloses.length / 2)]
-    // 約20営業日（1か月）後の予測変化率
     const projectedChangePct = midPrice > 0 ? (longSlope * 20) / midPrice * 100 : 0
 
     const shortCloses = allPrices.slice(-Math.min(20, allPrices.length)).map(p => p.close)
@@ -150,7 +250,7 @@ export function predict(allPrices, days, macroAdjust = null) {
       outlook = 'UNCERTAIN'
       text = `はっきりした値動きのパターンが見られず、1か月後の動きを予測しにくい状況です。もう少し様子を見てから判断するのもよいかもしれません。`
     }
-    // RSI詳細説明（基準・この株の値・結論の3項目）
+
     let rsiDetail = null
     if (lastRSI !== null) {
       const rsiValue = lastRSI.toFixed(1)
@@ -182,6 +282,14 @@ export function predict(allPrices, days, macroAdjust = null) {
     ma5: lastMA5 != null ? +lastMA5.toFixed(2) : null,
     ma20: lastMA20 != null ? +lastMA20.toFixed(2) : null,
     rsi: lastRSI != null ? +lastRSI.toFixed(1) : null,
+    macdBullish: macdData.macd !== null ? macdData.macd > macdData.signal : null,
+    macdAccel: macdData.histogram !== null && macdData.prevHistogram !== null
+      ? (macdData.macd > macdData.signal
+          ? macdData.histogram > macdData.prevHistogram
+          : macdData.histogram < macdData.prevHistogram)
+      : null,
+    bollingerPos: bollingerData !== null ? +bollingerData.position.toFixed(1) : null,
+    roc20: roc20 !== null ? +roc20.toFixed(1) : null,
     signals,
     chartData,
     forecast,

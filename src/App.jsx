@@ -8,6 +8,116 @@ import { MACRO_CONTEXT, SECTOR_MACRO } from './utils/macroContext'
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
 const MAX_TICKERS = 5
 
+function generateBuyAdvice(rankedItems) {
+  const valid = rankedItems.filter(item => item.prediction)
+  if (valid.length < 2) return null
+
+  const winner = valid[0]
+  const runnerUp = valid[1]
+  const p = winner.prediction
+  const allDown = valid.every(item => item.prediction.direction === 'DOWN')
+
+  const reasons = []
+  let comparisonNote = null
+
+  // MACD
+  if (p.macdBullish === true) {
+    if (p.macdAccel) {
+      reasons.push('MACDが「強気加速シグナル」：上昇トレンドが今まさに加速中')
+    } else {
+      reasons.push('MACDが「買いシグナル」：上昇トレンドが継続中')
+    }
+  }
+
+  // RSI 比較
+  if (p.rsi !== null && runnerUp.prediction.rsi !== null) {
+    const wRSI = p.rsi
+    const rRSI = runnerUp.prediction.rsi
+    if (wRSI < 60 && rRSI > 65) {
+      reasons.push(`RSI ${wRSI}（上昇余地あり）vs ${runnerUp.name || runnerUp.ticker} RSI ${rRSI}（買われすぎに接近）— ${winner.name || winner.ticker}の方が割安`)
+      comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}（${runnerUp.ticker}）はRSI ${rRSI}で買われすぎに接近中。調整リスクあり。スコア差 +${p.score - runnerUp.prediction.score}点`
+    } else if (wRSI < 45) {
+      reasons.push(`RSI ${wRSI}：まだ十分な上昇余地あり（売られすぎ圏から回復途上）`)
+    } else if (wRSI < 60) {
+      reasons.push(`RSI ${wRSI}：適正水準で過熱なし、まだ値上がりの余地がある`)
+    }
+  } else if (p.rsi !== null && p.rsi < 60) {
+    reasons.push(`RSI ${p.rsi}：上昇余地あり（70超えで要警戒）`)
+  }
+
+  // 20日モメンタム 全銘柄比較
+  if (p.roc20 !== null) {
+    const allRoc = valid.map(item => item.prediction.roc20).filter(v => v !== null)
+    const maxRoc = Math.max(...allRoc)
+    if (allRoc.length > 1 && p.roc20 === maxRoc && p.roc20 > 0) {
+      reasons.push(`直近20日の上昇率 +${p.roc20}%：${valid.length}銘柄中トップ（最も強い勢い）`)
+    } else if (p.roc20 > 3) {
+      reasons.push(`直近20日の上昇率 +${p.roc20}%：上昇の勢いを維持`)
+    }
+  }
+
+  // ボリンジャーバンド
+  if (p.bollingerPos !== null && p.bollingerPos < 35) {
+    reasons.push(`ボリンジャーバンド下限付近（${p.bollingerPos}%）：割安ゾーンにあり、反発・上昇の期待が高い`)
+  }
+
+  // マクロ環境
+  const sector = getStockSector(winner.ticker)
+  const sm = sector ? SECTOR_MACRO[sector] : null
+  if (sm && sm.score >= 2) {
+    reasons.push(`${sector}セクター：AI競争・シンギュラリティ・A2A需要の追い風を最大限に受ける（マクロスコア +${sm.score}）`)
+  } else if (sm && sm.score === 1) {
+    reasons.push(`${sector}セクター：現在のマクロ環境で追い風あり（スコア +${sm.score}）`)
+  }
+
+  // スコア差（comparisonNoteがまだなければ設定）
+  const scoreDiff = p.score - runnerUp.prediction.score
+  if (!comparisonNote) {
+    if (scoreDiff > 0) {
+      comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}（${runnerUp.ticker}）とのスコア差：+${scoreDiff}点`
+    } else {
+      comparisonNote = `${runnerUp.name || runnerUp.ticker}とスコアは接近。総合的に${winner.name || winner.ticker}がわずかに有利と判定`
+    }
+  }
+
+  return {
+    winner,
+    runnerUp,
+    allDown,
+    reasons: reasons.slice(0, 4),
+    comparisonNote,
+    scoreDiff,
+    allCount: valid.length,
+  }
+}
+
+function IndicatorBadges({ p }) {
+  return (
+    <div className="rank-indicators">
+      {p.macdBullish !== null && (
+        <span className={`ind-badge ${p.macdBullish ? 'bull' : 'bear'}`}>
+          MACD {p.macdBullish ? '▲' : '▼'}
+        </span>
+      )}
+      {p.rsi !== null && (
+        <span className={`ind-badge ${p.rsi < 40 ? 'bull' : p.rsi > 65 ? 'bear' : 'neutral'}`}>
+          RSI {p.rsi}
+        </span>
+      )}
+      {p.roc20 !== null && (
+        <span className={`ind-badge ${p.roc20 > 0 ? 'bull' : 'bear'}`}>
+          {p.roc20 > 0 ? '+' : ''}{p.roc20}%
+        </span>
+      )}
+      {p.bollingerPos !== null && (
+        <span className={`ind-badge ${p.bollingerPos < 30 ? 'bull' : p.bollingerPos > 70 ? 'bear' : 'neutral'}`}>
+          BB {p.bollingerPos.toFixed(0)}%
+        </span>
+      )}
+    </div>
+  )
+}
+
 function DetailCard({ item, onClose }) {
   const p = item.prediction
   return (
@@ -44,6 +154,28 @@ function DetailCard({ item, onClose }) {
           <strong>{p.rsi ?? '-'}</strong>
         </div>
       </div>
+      {(p.macdBullish !== null || p.bollingerPos !== null || p.roc20 !== null) && (
+        <div className="metrics metrics-ext">
+          {p.macdBullish !== null && (
+            <div className="metric">
+              <span>MACD</span>
+              <strong className={p.macdBullish ? 'val-up' : 'val-down'}>{p.macdBullish ? '▲ 買い' : '▼ 売り'}</strong>
+            </div>
+          )}
+          {p.bollingerPos !== null && (
+            <div className="metric">
+              <span>BB位置</span>
+              <strong className={p.bollingerPos < 30 ? 'val-up' : p.bollingerPos > 70 ? 'val-down' : ''}>{p.bollingerPos}%</strong>
+            </div>
+          )}
+          {p.roc20 !== null && (
+            <div className="metric">
+              <span>20日騰落</span>
+              <strong className={p.roc20 >= 0 ? 'val-up' : 'val-down'}>{p.roc20 > 0 ? '+' : ''}{p.roc20}%</strong>
+            </div>
+          )}
+        </div>
+      )}
 
       {p.forecast && (
         <div className="forecast">
@@ -429,6 +561,28 @@ export default function App() {
               <strong>{result.rsi ?? '-'}</strong>
             </div>
           </div>
+          {(result.macdBullish !== null || result.bollingerPos !== null || result.roc20 !== null) && (
+            <div className="metrics metrics-ext">
+              {result.macdBullish !== null && (
+                <div className="metric">
+                  <span>MACD</span>
+                  <strong className={result.macdBullish ? 'val-up' : 'val-down'}>{result.macdBullish ? '▲ 買い' : '▼ 売り'}</strong>
+                </div>
+              )}
+              {result.bollingerPos !== null && (
+                <div className="metric">
+                  <span>BB位置</span>
+                  <strong className={result.bollingerPos < 30 ? 'val-up' : result.bollingerPos > 70 ? 'val-down' : ''}>{result.bollingerPos}%</strong>
+                </div>
+              )}
+              {result.roc20 !== null && (
+                <div className="metric">
+                  <span>20日騰落</span>
+                  <strong className={result.roc20 >= 0 ? 'val-up' : 'val-down'}>{result.roc20 > 0 ? '+' : ''}{result.roc20}%</strong>
+                </div>
+              )}
+            </div>
+          )}
 
           {result.forecast && (
             <div className="forecast">
@@ -522,41 +676,76 @@ export default function App() {
         </div>
       )}
 
-      {rankingResults && (
-        <div className="card">
-          <h2 className="ranking-title">上昇予測ランキング</h2>
-          <div className="ranking">
-            {rankingResults.map((item, i) => (
-              <div key={item.ticker} className={`rank-card ${i === 0 ? 'winner' : ''} ${selectedDetail?.ticker === item.ticker ? 'selected' : ''}`}>
-                <div className="rank-number">{RANK_LABELS[i]}</div>
-                <div className="rank-body">
-                  <div
-                    className={`rank-ticker ${item.prediction ? 'clickable' : ''}`}
-                    onClick={() => handleTickerClick(item)}
-                  >
-                    <span className="rank-ticker-code">{item.ticker}</span>
-                    {item.name && <span className="rank-company-name">{item.name}</span>}
+      {rankingResults && (() => {
+        const advice = generateBuyAdvice(rankingResults)
+        return (
+          <>
+            {advice && (
+              <div className="card buy-advice">
+                <div className="buy-advice-eyebrow">今買うなら</div>
+                <div className="buy-advice-winner-row">
+                  <span className="buy-advice-arrow">▲</span>
+                  <div className="buy-advice-name-block">
+                    <span className="buy-advice-ticker">{advice.winner.ticker}</span>
+                    {advice.winner.name && <span className="buy-advice-name">{advice.winner.name}</span>}
                   </div>
-                  {item.prediction ? (
-                    <>
-                      <div className={`rank-direction ${item.prediction.direction === 'UP' ? 'up' : 'down'}`}>
-                        {item.prediction.direction === 'UP' ? '▲ 上昇傾向' : '▼ 下降傾向'}
-                      </div>
-                      <div className="rank-meta">
-                        <span>確信度 {item.prediction.confidence}%</span>
-                        <span>スコア {item.prediction.score > 0 ? '+' : ''}{item.prediction.score}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="rank-error">{item.error}</div>
-                  )}
+                  <div className="buy-advice-score-block">
+                    <span className="buy-advice-score-label">総合スコア</span>
+                    <span className="buy-advice-score-val">{advice.winner.prediction.score > 0 ? '+' : ''}{advice.winner.prediction.score}</span>
+                    <span className="buy-advice-conf">確信度 {advice.winner.prediction.confidence}%</span>
+                  </div>
                 </div>
+                {advice.allDown && (
+                  <div className="buy-advice-warning">全銘柄が下降傾向です。購入は慎重に。最も下落が小さいと予測される銘柄を示しています。</div>
+                )}
+                {advice.reasons.length > 0 && (
+                  <ul className="buy-advice-reasons">
+                    {advice.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                )}
+                {advice.comparisonNote && (
+                  <div className="buy-advice-vs">{advice.comparisonNote}</div>
+                )}
               </div>
-            ))}
-          </div>
-          <p className="disclaimer">※ ティッカーシンボルをクリックすると詳細を表示します。投資判断の最終責任はご自身にあります。</p>
-        </div>
-      )}
+            )}
+
+            <div className="card">
+              <h2 className="ranking-title">比較ランキング（{rankingResults.filter(i => i.prediction).length}銘柄）</h2>
+              <div className="ranking">
+                {rankingResults.map((item, i) => (
+                  <div key={item.ticker} className={`rank-card ${i === 0 ? 'winner' : ''} ${selectedDetail?.ticker === item.ticker ? 'selected' : ''}`}>
+                    <div className="rank-number">{RANK_LABELS[i]}</div>
+                    <div className="rank-body">
+                      <div
+                        className={`rank-ticker ${item.prediction ? 'clickable' : ''}`}
+                        onClick={() => handleTickerClick(item)}
+                      >
+                        <span className="rank-ticker-code">{item.ticker}</span>
+                        {item.name && <span className="rank-company-name">{item.name}</span>}
+                      </div>
+                      {item.prediction ? (
+                        <>
+                          <div className={`rank-direction ${item.prediction.direction === 'UP' ? 'up' : 'down'}`}>
+                            {item.prediction.direction === 'UP' ? '▲ 上昇傾向' : '▼ 下降傾向'}
+                          </div>
+                          <div className="rank-meta">
+                            <span>確信度 {item.prediction.confidence}%</span>
+                            <span>スコア {item.prediction.score > 0 ? '+' : ''}{item.prediction.score}</span>
+                          </div>
+                          <IndicatorBadges p={item.prediction} />
+                        </>
+                      ) : (
+                        <div className="rank-error">{item.error}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="disclaimer">※ ティッカーシンボルをクリックすると詳細を表示します。投資判断の最終責任はご自身にあります。</p>
+            </div>
+          </>
+        )
+      })()}
 
       {selectedDetail && (
         <DetailCard item={selectedDetail} onClose={() => setSelectedDetail(null)} />
