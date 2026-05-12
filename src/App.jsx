@@ -544,6 +544,9 @@ export default function App() {
               <option value={7}>1週間</option>
               <option value={14}>2週間</option>
               <option value={21}>3週間</option>
+              <option value={28}>4週間</option>
+              <option value={56}>8週間</option>
+              <option value={84}>12週間</option>
             </select>
           </div>
         </div>
