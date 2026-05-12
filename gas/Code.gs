@@ -38,14 +38,23 @@ function doGet(e) {
 
     const result = json.chart.result[0]
     const timestamps = result.timestamp
-    const closes = result.indicators.quote[0].close
+    const quote = result.indicators.quote[0]
+    const opens   = quote.open
+    const highs   = quote.high
+    const lows    = quote.low
+    const closes  = quote.close
+    const volumes = quote.volume
     const meta = result.meta
 
     const prices = timestamps
       .map(function(ts, i) {
         return {
-          date: new Date(ts * 1000).toISOString().slice(0, 10),
-          close: closes[i]
+          date:   new Date(ts * 1000).toISOString().slice(0, 10),
+          open:   opens[i]   || null,
+          high:   highs[i]   || null,
+          low:    lows[i]    || null,
+          close:  closes[i]  || null,
+          volume: volumes[i] || null
         }
       })
       .filter(function(p) { return p.close !== null && p.close !== undefined })

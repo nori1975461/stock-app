@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
 import { getSameIndustryRecommendations, getStockSector } from './utils/industries'
@@ -8,113 +8,190 @@ import { MACRO_CONTEXT, SECTOR_MACRO } from './utils/macroContext'
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
 const MAX_TICKERS = 5
 
+function fmtVol(v) {
+  if (!v || v <= 0) return '-'
+  if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M'
+  if (v >= 1000)    return (v / 1000).toFixed(0) + 'K'
+  return v.toString()
+}
+
+function StockChart({ chartData }) {
+  const maxVol = Math.max(...chartData.map(d => d.volume || 0))
+  const hasVol = maxVol > 0
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <ComposedChart data={chartData} margin={{ top: 4, right: hasVol ? 48 : 16, left: 0, bottom: 4 }}>
+        <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+        <YAxis yAxisId="price" domain={['auto', 'auto']} tick={{ fontSize: 11 }} width={60} />
+        {hasVol && (
+          <YAxis
+            yAxisId="vol"
+            orientation="right"
+            domain={[0, maxVol * 6]}
+            tickFormatter={v => v > 0 ? (v >= 1000000 ? (v / 1000000).toFixed(0) + 'M' : (v / 1000).toFixed(0) + 'K') : ''}
+            tick={{ fontSize: 10 }}
+            width={44}
+          />
+        )}
+        <Tooltip
+          formatter={(value, name) =>
+            name === '出来高'
+              ? fmtVol(value)
+              : (typeof value === 'number' ? value.toFixed(2) : value)
+          }
+        />
+        <Legend />
+        {hasVol && (
+          <Bar yAxisId="vol" dataKey="volume" fill="rgba(139,105,20,0.35)" name="出来高" barSize={4} />
+        )}
+        <Line yAxisId="price" type="monotone" dataKey="price" stroke="#4f8ef7" dot={false} name="終値" strokeWidth={2} />
+      </ComposedChart>
+    </ResponsiveContainer>
+  )
+}
+
 function generateBuyAdvice(rankedItems) {
   const valid = rankedItems.filter(item => item.prediction)
   if (valid.length < 2) return null
 
-  const winner = valid[0]
+  const winner   = valid[0]
   const runnerUp = valid[1]
-  const p = winner.prediction
-  const allDown = valid.every(item => item.prediction.direction === 'DOWN')
+  const p        = winner.prediction
+  const allDown  = valid.every(item => item.prediction.direction === 'DOWN')
 
   const reasons = []
   let comparisonNote = null
 
-  // MACD
-  if (p.macdBullish === true) {
-    if (p.macdAccel) {
-      reasons.push('MACDが「強気加速シグナル」：上昇トレンドが今まさに加速中')
+  // OBV + 規律可能性
+  if (p.obvTrend === 'UP') {
+    if (p.disciplinaryPct != null && p.disciplinaryPct >= 70) {
+      reasons.push(`OBV（資金フロー）上昇 + 規律可能性 ${p.disciplinaryPct}%：機関投資家の買いが継続し動きも予測しやすい`)
     } else {
-      reasons.push('MACDが「買いシグナル」：上昇トレンドが継続中')
+      reasons.push('OBV（資金フロー）が上昇中：機関投資家・大口の買いが続いている')
     }
   }
 
-  // RSI 比較
-  if (p.rsi !== null && runnerUp.prediction.rsi !== null) {
-    const wRSI = p.rsi
-    const rRSI = runnerUp.prediction.rsi
-    if (wRSI < 60 && rRSI > 65) {
-      reasons.push(`RSI ${wRSI}（上昇余地あり）vs ${runnerUp.name || runnerUp.ticker} RSI ${rRSI}（買われすぎに接近）— ${winner.name || winner.ticker}の方が割安`)
-      comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}（${runnerUp.ticker}）はRSI ${rRSI}で買われすぎに接近中。調整リスクあり。スコア差 +${p.score - runnerUp.prediction.score}点`
-    } else if (wRSI < 45) {
-      reasons.push(`RSI ${wRSI}：まだ十分な上昇余地あり（売られすぎ圏から回復途上）`)
-    } else if (wRSI < 60) {
-      reasons.push(`RSI ${wRSI}：適正水準で過熱なし、まだ値上がりの余地がある`)
-    }
-  } else if (p.rsi !== null && p.rsi < 60) {
-    reasons.push(`RSI ${p.rsi}：上昇余地あり（70超えで要警戒）`)
+  // 停滞シグナル
+  if (p.isStagnating) {
+    reasons.push('上昇後に出来高減少で価格が安定（停滞）：売り手が不在→上昇継続の可能性が高い')
   }
 
-  // 20日モメンタム 全銘柄比較
-  if (p.roc20 !== null) {
-    const allRoc = valid.map(item => item.prediction.roc20).filter(v => v !== null)
-    const maxRoc = Math.max(...allRoc)
-    if (allRoc.length > 1 && p.roc20 === maxRoc && p.roc20 > 0) {
-      reasons.push(`直近20日の上昇率 +${p.roc20}%：${valid.length}銘柄中トップ（最も強い勢い）`)
-    } else if (p.roc20 > 3) {
-      reasons.push(`直近20日の上昇率 +${p.roc20}%：上昇の勢いを維持`)
-    }
+  // マグネット効果（高値突破）
+  if (p.magnetEffect && (p.magnetEffect.status === 'NEW_HIGH' || p.magnetEffect.status === 'BREAKOUT')) {
+    reasons.push(`過去高値を突破（+${p.magnetEffect.distancePct}%）：上値抵抗を超えた→慣性の法則で上昇継続`)
   }
 
-  // ボリンジャーバンド
-  if (p.bollingerPos !== null && p.bollingerPos < 35) {
-    reasons.push(`ボリンジャーバンド下限付近（${p.bollingerPos}%）：割安ゾーンにあり、反発・上昇の期待が高い`)
+  // 慣性の法則
+  if (p.trendDays >= 4) {
+    reasons.push(`${p.trendDays}日連続上昇：慣性の法則が発動中—強いトレンドは続く`)
   }
 
-  // マクロ環境
+  // 出来高＋上昇
+  if (p.relativeVolume !== null && p.relativeVolume > 1.2 && p.direction === 'UP') {
+    reasons.push(`出来高 ${(p.relativeVolume * 100).toFixed(0)}%（平均比）：資金流入を伴う健全な上昇`)
+  }
+
+  // 規律可能性（単体）
+  if (p.disciplinaryPct != null && p.disciplinaryPct >= 75 && !reasons.some(r => r.includes('規律'))) {
+    reasons.push(`規律可能性 ${p.disciplinaryPct}%：値動きが予測しやすい状態`)
+  }
+
+  // セクターマクロ（参考）
   const sector = getStockSector(winner.ticker)
-  const sm = sector ? SECTOR_MACRO[sector] : null
+  const sm     = sector ? SECTOR_MACRO[sector] : null
   if (sm && sm.score >= 2) {
-    reasons.push(`${sector}セクター：AI競争・シンギュラリティ・A2A需要の追い風を最大限に受ける（マクロスコア +${sm.score}）`)
-  } else if (sm && sm.score === 1) {
-    reasons.push(`${sector}セクター：現在のマクロ環境で追い風あり（スコア +${sm.score}）`)
+    reasons.push(`${sector}セクター：AI・半導体需要の追い風（マクロ参考 +${sm.score}）`)
   }
 
-  // スコア差（comparisonNoteがまだなければ設定）
   const scoreDiff = p.score - runnerUp.prediction.score
-  if (!comparisonNote) {
-    if (scoreDiff > 0) {
-      comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}（${runnerUp.ticker}）とのスコア差：+${scoreDiff}点`
-    } else {
-      comparisonNote = `${runnerUp.name || runnerUp.ticker}とスコアは接近。総合的に${winner.name || winner.ticker}がわずかに有利と判定`
-    }
+  const discDiff  = (p.disciplinaryPct || 0) - (runnerUp.prediction.disciplinaryPct || 0)
+  if (discDiff > 10) {
+    comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}より規律可能性が${discDiff.toFixed(0)}%高い（より予測しやすい）。スコア差 +${scoreDiff}点`
+  } else if (scoreDiff > 0) {
+    comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}とのスコア差：+${scoreDiff}点`
+  } else {
+    comparisonNote = `${runnerUp.name || runnerUp.ticker}とスコアは接近。総合的に${winner.name || winner.ticker}がわずかに有利と判定`
   }
 
-  return {
-    winner,
-    runnerUp,
-    allDown,
-    reasons: reasons.slice(0, 4),
-    comparisonNote,
-    scoreDiff,
-    allCount: valid.length,
-  }
+  return { winner, runnerUp, allDown, reasons: reasons.slice(0, 4), comparisonNote, scoreDiff, allCount: valid.length }
 }
 
 function IndicatorBadges({ p }) {
   return (
     <div className="rank-indicators">
-      {p.macdBullish !== null && (
-        <span className={`ind-badge ${p.macdBullish ? 'bull' : 'bear'}`}>
-          MACD {p.macdBullish ? '▲' : '▼'}
+      {p.disciplinaryPct != null && (
+        <span className={`ind-badge ${p.disciplinaryPct >= 70 ? 'bull' : p.disciplinaryPct < 40 ? 'bear' : 'neutral'}`}>
+          規律 {p.disciplinaryPct}%
         </span>
       )}
-      {p.rsi !== null && (
-        <span className={`ind-badge ${p.rsi < 40 ? 'bull' : p.rsi > 65 ? 'bear' : 'neutral'}`}>
-          RSI {p.rsi}
+      {p.relativeVolume != null && (
+        <span className={`ind-badge ${p.relativeVolume > 2.5 ? 'bear' : p.relativeVolume > 1.2 ? 'bull' : 'neutral'}`}>
+          VOL {p.relativeVolume.toFixed(1)}x
         </span>
       )}
-      {p.roc20 !== null && (
-        <span className={`ind-badge ${p.roc20 > 0 ? 'bull' : 'bear'}`}>
-          {p.roc20 > 0 ? '+' : ''}{p.roc20}%
+      {p.hasVolume && (
+        <span className={`ind-badge ${p.obvTrend === 'UP' ? 'bull' : p.obvTrend === 'DOWN' ? 'bear' : 'neutral'}`}>
+          OBV {p.obvTrend === 'UP' ? '▲' : p.obvTrend === 'DOWN' ? '▼' : '━'}
         </span>
       )}
-      {p.bollingerPos !== null && (
-        <span className={`ind-badge ${p.bollingerPos < 30 ? 'bull' : p.bollingerPos > 70 ? 'bear' : 'neutral'}`}>
-          BB {p.bollingerPos.toFixed(0)}%
+      {p.trendDays !== 0 && (
+        <span className={`ind-badge ${p.trendDays > 0 ? 'bull' : 'bear'}`}>
+          {p.trendDays > 0 ? '+' : ''}{p.trendDays}日
         </span>
       )}
     </div>
+  )
+}
+
+function CTMetrics({ p }) {
+  const magDist = p.magnetEffect?.distancePct
+  const magStatus = p.magnetEffect?.status
+  return (
+    <>
+      <div className="metrics">
+        <div className="metric">
+          <span>現在値</span>
+          <strong>{p.lastClose.toFixed(2)}</strong>
+        </div>
+        <div className="metric">
+          <span>出来高比率</span>
+          <strong>{p.relativeVolume != null ? `${(p.relativeVolume * 100).toFixed(0)}%` : '-'}</strong>
+        </div>
+        <div className="metric">
+          <span>規律可能性</span>
+          <strong>{p.disciplinaryPct != null ? `${p.disciplinaryPct}%` : '-'}</strong>
+        </div>
+        <div className="metric">
+          <span>連続日数</span>
+          <strong>
+            {p.trendDays > 0 ? `+${p.trendDays}日` : p.trendDays < 0 ? `${p.trendDays}日` : '0日'}
+          </strong>
+        </div>
+      </div>
+      <div className="metrics metrics-ext">
+        <div className="metric">
+          <span>OBV傾向</span>
+          <strong className={p.obvTrend === 'UP' ? 'val-up' : p.obvTrend === 'DOWN' ? 'val-down' : ''}>
+            {p.obvTrend === 'UP' ? '▲ 上昇' : p.obvTrend === 'DOWN' ? '▼ 下降' : '━ 横ばい'}
+          </strong>
+        </div>
+        <div className="metric">
+          <span>最高値距離</span>
+          <strong className={
+            magStatus === 'NEW_HIGH' || magStatus === 'BREAKOUT' ? 'val-up'
+            : magStatus === 'RESISTANCE' ? 'val-down' : ''
+          }>
+            {magDist != null ? `${magDist > 0 ? '+' : ''}${magDist}%` : '-'}
+          </strong>
+        </div>
+        <div className="metric">
+          <span>停滞シグナル</span>
+          <strong className={p.isStagnating ? 'val-up' : ''}>
+            {p.isStagnating ? '✓ 検出' : '━ なし'}
+          </strong>
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -136,71 +213,15 @@ function DetailCard({ item, onClose }) {
         <span className="confidence">確信度 {p.confidence}%</span>
       </div>
 
-      <div className="metrics">
-        <div className="metric">
-          <span>現在値</span>
-          <strong>{p.lastClose.toFixed(2)}</strong>
-        </div>
-        <div className="metric">
-          <span>MA5</span>
-          <strong>{p.ma5 ?? '-'}</strong>
-        </div>
-        <div className="metric">
-          <span>MA20</span>
-          <strong>{p.ma20 ?? '-'}</strong>
-        </div>
-        <div className="metric">
-          <span>RSI(14)</span>
-          <strong>{p.rsi ?? '-'}</strong>
-        </div>
-      </div>
-      {(p.macdBullish !== null || p.bollingerPos !== null || p.roc20 !== null) && (
-        <div className="metrics metrics-ext">
-          {p.macdBullish !== null && (
-            <div className="metric">
-              <span>MACD</span>
-              <strong className={p.macdBullish ? 'val-up' : 'val-down'}>{p.macdBullish ? '▲ 買い' : '▼ 売り'}</strong>
-            </div>
-          )}
-          {p.bollingerPos !== null && (
-            <div className="metric">
-              <span>BB位置</span>
-              <strong className={p.bollingerPos < 30 ? 'val-up' : p.bollingerPos > 70 ? 'val-down' : ''}>{p.bollingerPos}%</strong>
-            </div>
-          )}
-          {p.roc20 !== null && (
-            <div className="metric">
-              <span>20日騰落</span>
-              <strong className={p.roc20 >= 0 ? 'val-up' : 'val-down'}>{p.roc20 > 0 ? '+' : ''}{p.roc20}%</strong>
-            </div>
-          )}
-        </div>
-      )}
+      <CTMetrics p={p} />
 
       {p.forecast && (
         <div className="forecast">
-          <div className="forecast-label">1か月後の見通し</div>
+          <div className="forecast-label">1か月後の見通し（CLEAR TRADE分析）</div>
           <div className={`forecast-outlook ${p.forecast.outlook === 'LIKELY_UP' ? 'up' : p.forecast.outlook === 'LIKELY_DOWN' ? 'down' : 'uncertain'}`}>
             {p.forecast.outlook === 'LIKELY_UP' ? '▲ 上昇の可能性あり' : p.forecast.outlook === 'LIKELY_DOWN' ? '▼ 下落リスクあり' : '━ 方向性は不透明'}
           </div>
           <p className="forecast-text">{p.forecast.text}</p>
-          {p.forecast.rsiDetail && (
-            <div className="rsi-detail">
-              <div className="rsi-detail-title">RSI指標の詳細</div>
-              <div className="rsi-detail-row">
-                <span className="rsi-detail-label">データ全体の基準</span>
-                <span className="rsi-detail-value">{p.forecast.rsiDetail.standard}</span>
-              </div>
-              <div className="rsi-detail-row">
-                <span className="rsi-detail-label">この株のRSI値</span>
-                <span className="rsi-detail-value highlight">{p.forecast.rsiDetail.value}</span>
-              </div>
-              <div className="rsi-detail-row">
-                <span className="rsi-detail-label">予測される結論</span>
-                <span className="rsi-detail-value">{p.forecast.rsiDetail.conclusion}</span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -213,7 +234,7 @@ function DetailCard({ item, onClose }) {
         return (
           <div className="macro-stock-section">
             <div className="macro-stock-header">
-              <span className="macro-stock-title">マクロ環境の影響</span>
+              <span className="macro-stock-title">マクロ環境（参考）</span>
               <span className="macro-stock-sector">{sector}</span>
               <span className={`macro-stock-dir ${dirClass}`}>{dirLabel}</span>
               <span className={`macro-stock-score ${sm.score > 0 ? 'pos' : sm.score < 0 ? 'neg' : 'zero'}`}>
@@ -245,28 +266,18 @@ function DetailCard({ item, onClose }) {
       })()}
 
       <div className="signals">
-        <h3>判定根拠</h3>
+        <h3>判定根拠（CLEAR TRADE指標）</h3>
         <ul>
           {p.signals.map((s, i) => <li key={i}>{s}</li>)}
         </ul>
       </div>
 
       <div className="chart-wrap">
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={p.chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-            <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-            <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11 }} width={60} />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="price" stroke="#4f8ef7" dot={false} name="終値" strokeWidth={2} />
-            <Line type="monotone" dataKey="MA5" stroke="#f7a54f" dot={false} name="MA5" strokeWidth={1.5} strokeDasharray="4 2" />
-            <Line type="monotone" dataKey="MA20" stroke="#e74c4c" dot={false} name="MA20" strokeWidth={1.5} strokeDasharray="4 2" />
-          </LineChart>
-        </ResponsiveContainer>
+        <StockChart chartData={p.chartData} />
       </div>
 
-      <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
-</div>
+      <p className="disclaimer">※ CLEAR TRADE理論（出来高＋純粋チャート分析）による参考情報です。投資判断の最終責任はご自身にあります。</p>
+    </div>
   )
 }
 
@@ -304,7 +315,7 @@ function NikkeiPanel({ gasUrl, apiKey }) {
       <div className="nikkei-header">
         <div>
           <div className="nikkei-title">日経平均株価（^N225）1週間予測</div>
-          <div className="nikkei-subtitle">テクニカル指標 ＋ マクロ環境分析</div>
+          <div className="nikkei-subtitle">CLEAR TRADE分析 ＋ マクロ環境参考</div>
         </div>
         <button className="btn-nikkei" onClick={handleAnalyze} disabled={loading}>
           {loading ? '取得中...' : '今すぐ分析'}
@@ -322,9 +333,20 @@ function NikkeiPanel({ gasUrl, apiKey }) {
           </div>
           <div className="metrics">
             <div className="metric"><span>現在値</span><strong>{data.lastClose.toFixed(0)}円</strong></div>
-            <div className="metric"><span>MA5</span><strong>{data.ma5 ?? '-'}</strong></div>
-            <div className="metric"><span>MA20</span><strong>{data.ma20 ?? '-'}</strong></div>
-            <div className="metric"><span>RSI(14)</span><strong>{data.rsi ?? '-'}</strong></div>
+            <div className="metric">
+              <span>出来高比率</span>
+              <strong>{data.relativeVolume != null ? `${(data.relativeVolume * 100).toFixed(0)}%` : '-'}</strong>
+            </div>
+            <div className="metric">
+              <span>規律可能性</span>
+              <strong>{data.disciplinaryPct != null ? `${data.disciplinaryPct}%` : '-'}</strong>
+            </div>
+            <div className="metric">
+              <span>OBV</span>
+              <strong className={data.obvTrend === 'UP' ? 'val-up' : data.obvTrend === 'DOWN' ? 'val-down' : ''}>
+                {data.obvTrend === 'UP' ? '▲ 上昇' : data.obvTrend === 'DOWN' ? '▼ 下降' : '━ 横ばい'}
+              </strong>
+            </div>
           </div>
         </div>
       )}
@@ -387,19 +409,19 @@ function NikkeiPanel({ gasUrl, apiKey }) {
         </table>
       </details>
 
-      <p className="disclaimer">調査日: {mc.researchDate}　※テクニカル指標・マクロ情報は参考目安です。投資判断の最終責任はご自身にあります。</p>
+      <p className="disclaimer">調査日: {mc.researchDate}　※マクロ情報は参考目安です。投資判断の最終責任はご自身にあります。</p>
     </div>
   )
 }
 
 export default function App() {
-  const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('gas_url') || '')
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('av_api_key') || '')
-  const [symbols, setSymbols] = useState('AAPL')
-  const [days, setDays] = useState(14)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [result, setResult] = useState(null)
+  const [gasUrl, setGasUrl]         = useState(() => localStorage.getItem('gas_url') || '')
+  const [apiKey, setApiKey]         = useState(() => localStorage.getItem('av_api_key') || '')
+  const [symbols, setSymbols]       = useState('AAPL')
+  const [days, setDays]             = useState(14)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState(null)
+  const [result, setResult]         = useState(null)
   const [rankingResults, setRankingResults] = useState(null)
   const [selectedDetail, setSelectedDetail] = useState(null)
 
@@ -431,9 +453,9 @@ export default function App() {
     if (tickerList.length === 1) {
       try {
         const { prices, name } = await fetchStockData(tickerList[0], { gasUrl: gasUrl.trim(), apiKey: apiKey.trim() })
-        const sector0 = getStockSector(tickerList[0])
-        const macroAdjust0 = sector0 && SECTOR_MACRO[sector0] ? { sector: sector0, ...SECTOR_MACRO[sector0] } : null
-        setResult({ ticker: tickerList[0], name, ...predict(prices, days, macroAdjust0) })
+        const sector0     = getStockSector(tickerList[0])
+        const macroAdjust = sector0 && SECTOR_MACRO[sector0] ? { sector: sector0, ...SECTOR_MACRO[sector0] } : null
+        setResult({ ticker: tickerList[0], name, ...predict(prices, days, macroAdjust) })
       } catch (err) {
         setError(err.message)
       } finally {
@@ -447,12 +469,12 @@ export default function App() {
         const ranked = settled
           .map((r, i) => {
             const sec = getStockSector(tickerList[i])
-            const ma = sec && SECTOR_MACRO[sec] ? { sector: sec, ...SECTOR_MACRO[sec] } : null
+            const ma  = sec && SECTOR_MACRO[sec] ? { sector: sec, ...SECTOR_MACRO[sec] } : null
             return {
-              ticker: tickerList[i],
-              name: r.status === 'fulfilled' ? r.value.name : null,
+              ticker:     tickerList[i],
+              name:       r.status === 'fulfilled' ? r.value.name : null,
               prediction: r.status === 'fulfilled' ? predict(r.value.prices, days, ma) : null,
-              error: r.status === 'rejected' ? r.reason.message : null,
+              error:      r.status === 'rejected'  ? r.reason.message : null,
             }
           })
           .sort((a, b) => {
@@ -543,71 +565,15 @@ export default function App() {
             <span className="confidence">確信度 {result.confidence}%</span>
           </div>
 
-          <div className="metrics">
-            <div className="metric">
-              <span>現在値</span>
-              <strong>{result.lastClose.toFixed(2)}</strong>
-            </div>
-            <div className="metric">
-              <span>MA5</span>
-              <strong>{result.ma5 ?? '-'}</strong>
-            </div>
-            <div className="metric">
-              <span>MA20</span>
-              <strong>{result.ma20 ?? '-'}</strong>
-            </div>
-            <div className="metric">
-              <span>RSI(14)</span>
-              <strong>{result.rsi ?? '-'}</strong>
-            </div>
-          </div>
-          {(result.macdBullish !== null || result.bollingerPos !== null || result.roc20 !== null) && (
-            <div className="metrics metrics-ext">
-              {result.macdBullish !== null && (
-                <div className="metric">
-                  <span>MACD</span>
-                  <strong className={result.macdBullish ? 'val-up' : 'val-down'}>{result.macdBullish ? '▲ 買い' : '▼ 売り'}</strong>
-                </div>
-              )}
-              {result.bollingerPos !== null && (
-                <div className="metric">
-                  <span>BB位置</span>
-                  <strong className={result.bollingerPos < 30 ? 'val-up' : result.bollingerPos > 70 ? 'val-down' : ''}>{result.bollingerPos}%</strong>
-                </div>
-              )}
-              {result.roc20 !== null && (
-                <div className="metric">
-                  <span>20日騰落</span>
-                  <strong className={result.roc20 >= 0 ? 'val-up' : 'val-down'}>{result.roc20 > 0 ? '+' : ''}{result.roc20}%</strong>
-                </div>
-              )}
-            </div>
-          )}
+          <CTMetrics p={result} />
 
           {result.forecast && (
             <div className="forecast">
-              <div className="forecast-label">1か月後の見通し</div>
+              <div className="forecast-label">1か月後の見通し（CLEAR TRADE分析）</div>
               <div className={`forecast-outlook ${result.forecast.outlook === 'LIKELY_UP' ? 'up' : result.forecast.outlook === 'LIKELY_DOWN' ? 'down' : 'uncertain'}`}>
                 {result.forecast.outlook === 'LIKELY_UP' ? '▲ 上昇の可能性あり' : result.forecast.outlook === 'LIKELY_DOWN' ? '▼ 下落リスクあり' : '━ 方向性は不透明'}
               </div>
               <p className="forecast-text">{result.forecast.text}</p>
-              {result.forecast.rsiDetail && (
-                <div className="rsi-detail">
-                  <div className="rsi-detail-title">RSI指標の詳細</div>
-                  <div className="rsi-detail-row">
-                    <span className="rsi-detail-label">データ全体の基準</span>
-                    <span className="rsi-detail-value">{result.forecast.rsiDetail.standard}</span>
-                  </div>
-                  <div className="rsi-detail-row">
-                    <span className="rsi-detail-label">この株のRSI値</span>
-                    <span className="rsi-detail-value highlight">{result.forecast.rsiDetail.value}</span>
-                  </div>
-                  <div className="rsi-detail-row">
-                    <span className="rsi-detail-label">予測される結論</span>
-                    <span className="rsi-detail-value">{result.forecast.rsiDetail.conclusion}</span>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -620,7 +586,7 @@ export default function App() {
             return (
               <div className="macro-stock-section">
                 <div className="macro-stock-header">
-                  <span className="macro-stock-title">マクロ環境の影響</span>
+                  <span className="macro-stock-title">マクロ環境（参考）</span>
                   <span className="macro-stock-sector">{sector}</span>
                   <span className={`macro-stock-dir ${dirClass}`}>{dirLabel}</span>
                   <span className={`macro-stock-score ${sm.score > 0 ? 'pos' : sm.score < 0 ? 'neg' : 'zero'}`}>
@@ -652,27 +618,17 @@ export default function App() {
           })()}
 
           <div className="signals">
-            <h3>判定根拠</h3>
+            <h3>判定根拠（CLEAR TRADE指標）</h3>
             <ul>
               {result.signals.map((s, i) => <li key={i}>{s}</li>)}
             </ul>
           </div>
 
           <div className="chart-wrap">
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={result.chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#555555' }} interval="preserveStartEnd" />
-                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#555555' }} width={60} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="price" stroke="#4f8ef7" dot={false} name="終値" strokeWidth={2} />
-                <Line type="monotone" dataKey="MA5" stroke="#f7a54f" dot={false} name="MA5" strokeWidth={1.5} strokeDasharray="4 2" />
-                <Line type="monotone" dataKey="MA20" stroke="#e74c4c" dot={false} name="MA20" strokeWidth={1.5} strokeDasharray="4 2" />
-              </LineChart>
-            </ResponsiveContainer>
+            <StockChart chartData={result.chartData} />
           </div>
 
-          <p className="disclaimer">※ この予測は移動平均・RSIによる参考情報です。投資判断の最終責任はご自身にあります。</p>
+          <p className="disclaimer">※ CLEAR TRADE理論（出来高＋純粋チャート分析）による参考情報です。投資判断の最終責任はご自身にあります。</p>
         </div>
       )}
 

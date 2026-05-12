@@ -1042,3 +1042,23 @@ h1 {
   .row { grid-template-columns: 1fr; }
   .rank-meta { margin-left: 0; }
 }
+
+/* ─── CT指標メトリクス Row2 ──────────────────────────── */
+.metrics-ext .metric strong { font-size: 0.92rem; }
+
+/* OBV・停滞シグナルの強調色はval-up/val-downを流用 */
+
+/* ─── 出来高バー付きチャート ─────────────────────────── */
+.chart-wrap .recharts-bar-rectangle { opacity: 0.7; }
+
+/* ─── CT理論 注記 ─────────────────────────────────────── */
+.ct-note {
+  font-size: 0.72rem;
+  color: #7a5c10;
+  background: rgba(139,105,20,0.07);
+  border: 1px solid rgba(139,105,20,0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: 10px;
+  line-height: 1.5;
+}

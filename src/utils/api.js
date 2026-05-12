@@ -26,7 +26,14 @@ async function fetchViaAlphaVantage(symbol, apiKey) {
   }
   return {
     prices: Object.entries(timeSeries)
-      .map(([date, v]) => ({ date, close: parseFloat(v['4. close']) }))
+      .map(([date, v]) => ({
+        date,
+        open:   parseFloat(v['1. open']),
+        high:   parseFloat(v['2. high']),
+        low:    parseFloat(v['3. low']),
+        close:  parseFloat(v['4. close']),
+        volume: parseInt(v['5. volume'])
+      }))
       .sort((a, b) => a.date.localeCompare(b.date)),
     name: null,
   }
