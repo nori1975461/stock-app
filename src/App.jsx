@@ -83,6 +83,19 @@ function generateBuyAdvice(rankedItems) {
   if (p.disciplinaryPct != null && p.disciplinaryPct >= 75 && !reasons.some(r => r.includes('規律'))) {
     reasons.push(`規律可能性 ${p.disciplinaryPct}%：値動きが予測しやすい状態`)
   }
+  const iv = p.initialVelocity
+  const d2 = p.day2Confirmation
+  if (iv && iv.isAligned && iv.currentDir > 0) {
+    if (iv.level === 'VERY_HIGH') {
+      reasons.push(`初速 超高速（${iv.velocityPct > 0 ? '+' : ''}${iv.velocityPct}%/2日）：CT理論最重要指標—強烈なスタートダッシュはトレンド持続力が最高水準の証拠`)
+    } else if (iv.level === 'HIGH') {
+      reasons.push(`初速 高速（${iv.velocityPct > 0 ? '+' : ''}${iv.velocityPct}%/2日）：力強いトレンド開始—上昇持続の可能性が高い`)
+    }
+  }
+  if (d2 && d2.isConfirmed && d2.day1Dir > 0) {
+    reasons.push(`2日目確認済み（前日${d2.day1ChangePct > 0 ? '+' : ''}${d2.day1ChangePct}%→翌日${d2.day2ChangePct > 0 ? '+' : ''}${d2.day2ChangePct}%）：CT理論「信頼度4倍」の確定シグナル`)
+  }
+
   const sector = getStockSector(winner.ticker)
   const sm     = sector ? SECTOR_MACRO[sector] : null
   if (sm && sm.score >= 2) {
@@ -103,6 +116,8 @@ function generateBuyAdvice(rankedItems) {
 }
 
 function IndicatorBadges({ p }) {
+  const iv = p.initialVelocity
+  const d2 = p.day2Confirmation
   return (
     <div className="rank-indicators">
       {p.disciplinaryPct != null && (
@@ -125,6 +140,23 @@ function IndicatorBadges({ p }) {
           {p.trendDays > 0 ? '+' : ''}{p.trendDays}日
         </span>
       )}
+      {iv && iv.isAligned && (iv.level === 'VERY_HIGH' || iv.level === 'HIGH') && (
+        <span className={`ind-badge ${iv.currentDir > 0 ? 'bull' : 'bear'}`}>
+          初速{iv.level === 'VERY_HIGH' ? ' ⚡超高' : ' ↑高'}
+        </span>
+      )}
+      {iv && iv.level === 'LOW' && (
+        <span className="ind-badge bear">初速 ↓低</span>
+      )}
+      {d2 && d2.status !== 'NO_SIGNAL' && (
+        <span className={`ind-badge ${
+          d2.isConfirmed && d2.day1Dir > 0  ? 'bull' :
+          d2.isConfirmed && d2.day1Dir < 0  ? 'bear' :
+          !d2.isConfirmed && d2.day1Dir > 0 ? 'bear' : 'bull'
+        }`}>
+          2日目{d2.isConfirmed ? '✓' : '✗'}
+        </span>
+      )}
     </div>
   )
 }
@@ -132,6 +164,9 @@ function IndicatorBadges({ p }) {
 function CTMetrics({ p }) {
   const magDist   = p.magnetEffect?.distancePct
   const magStatus = p.magnetEffect?.status
+  const iv = p.initialVelocity
+  const d2 = p.day2Confirmation
+  const hasRow3 = iv !== null || (d2 !== null && d2.status !== 'NO_SIGNAL')
   return (
     <>
       <div className="metrics">
@@ -177,6 +212,44 @@ function CTMetrics({ p }) {
           </strong>
         </div>
       </div>
+      {hasRow3 && (
+        <div className="metrics metrics-ext">
+          {iv !== null && (
+            <>
+              <div className="metric">
+                <span>初速判定</span>
+                <strong className={
+                  iv.isAligned && (iv.level === 'VERY_HIGH' || iv.level === 'HIGH')
+                    ? (iv.currentDir > 0 ? 'val-up' : 'val-down')
+                    : iv.level === 'LOW' ? 'val-down' : ''
+                }>
+                  {iv.level === 'VERY_HIGH' ? '⚡ 超高速' : iv.level === 'HIGH' ? '↑ 高速' : iv.level === 'MEDIUM' ? '→ 中速' : '↓ 低速'}
+                </strong>
+              </div>
+              <div className="metric">
+                <span>初速(%/2日)</span>
+                <strong className={iv.velocityPct > 0 ? 'val-up' : 'val-down'}>
+                  {iv.velocityPct > 0 ? '+' : ''}{iv.velocityPct}%
+                </strong>
+              </div>
+            </>
+          )}
+          {d2 !== null && d2.status !== 'NO_SIGNAL' && (
+            <div className="metric">
+              <span>2日目確認</span>
+              <strong className={
+                d2.isConfirmed && d2.day1Dir > 0  ? 'val-up' :
+                d2.isConfirmed && d2.day1Dir < 0  ? 'val-down' :
+                !d2.isConfirmed && d2.day1Dir > 0 ? 'val-down' : 'val-up'
+              }>
+                {d2.isConfirmed
+                  ? (d2.day1Dir > 0 ? '✓ 確認済み' : '✗ 下落確定')
+                  : (d2.day1Dir > 0 ? '✗ 否定' : '△ 底打ち?')}
+              </strong>
+            </div>
+          )}
+        </div>
+      )}
     </>
   )
 }
