@@ -6,8 +6,8 @@ import { getSameIndustryRecommendations, getStockSector } from './utils/industri
 import { MACRO_CONTEXT, SECTOR_MACRO } from './utils/macroContext'
 import { CT_UNIVERSE, CT_LEADERS, LEADER_RANK_LABEL, LEADER_RANK_CLASS } from './utils/ctUniverse'
 
-const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
-const MAX_TICKERS = 5
+const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位', '6位', '7位', '8位', '9位', '10位']
+const MAX_TICKERS = 10
 
 function fmtVol(v) {
   if (!v || v <= 0) return '-'
@@ -279,7 +279,7 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet }) {
     setIsAnalyzing(false)
   }
 
-  const topTickers = results ? results.slice(0, 5).map(r => r.ticker).join(',') : ''
+  const topTickers = results ? results.map(r => r.ticker).join(',') : ''
 
   return (
     <div className="card leader-panel">
@@ -406,7 +406,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
     })
 
     setScannedCount(allResults.length)
-    setResults(sorted.slice(0, 5))
+    setResults(sorted.slice(0, 10))
     setIsScanning(false)
   }
 
@@ -419,11 +419,11 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
         <div>
           <div className="screener-title">CT銘柄スクリーニング</div>
           <div className="screener-subtitle">
-            {CT_UNIVERSE.length}銘柄をCLEAR TRADE理論でスキャンし、上位5銘柄を自動選定
+            {CT_UNIVERSE.length}銘柄をCLEAR TRADE理論でスキャンし、上位10銘柄を自動選定
           </div>
         </div>
         <button className="btn-screener" onClick={run} disabled={isScanning}>
-          {isScanning ? 'スキャン中...' : '上位5銘柄を探す'}
+          {isScanning ? 'スキャン中...' : '上位10銘柄を探す'}
         </button>
       </div>
 
@@ -443,7 +443,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
       {results && (
         <>
           <div className="screener-summary">
-            {scannedCount}銘柄をスキャン完了 — CT総合スコア上位5銘柄
+            {scannedCount}銘柄をスキャン完了 — CT総合スコア上位10銘柄
           </div>
           <div className="screener-results">
             {results.map((item, i) => {
@@ -485,7 +485,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
           </div>
           {topTickers && (
             <button className="btn-select-set" onClick={() => onSelectSet(topTickers)}>
-              ▶ この5銘柄を比較分析する（フォームに入力）
+              ▶ この10銘柄を比較分析する（フォームに入力）
             </button>
           )}
           <p className="disclaimer" style={{ marginTop: 12 }}>
