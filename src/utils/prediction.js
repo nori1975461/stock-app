@@ -214,6 +214,132 @@ function checkDay2Confirmation(closes, prices) {
   }
 }
 
+// ── 分散エグジット判断（Distributed Exit Judgment）──────────────────────────
+// CT理論：流れ・加速度・ボラティリティの3指標の悪化を1つずつ検知し
+// 悪化シグナル1つごとに1/3ずつ段階的に手仕舞いを促すリスク管理手法
+function calcExitJudgment(closes, volumes, prices) {
+  const n = closes.length
+  if (n < 20) return null
+
+  // ──────────────────────────────────────────────────────────────────
+  // Signal 1: 流れの悪化（OBV乖離 ＋ 出来高配分の逆転）
+  // 価格は上昇しているのに機関投資家の資金フローが低下している状態
+  // ──────────────────────────────────────────────────────────────────
+  const priceTrend10 = closes[n - 1] > closes[n - 11] ? 1 : -1
+  const obvTrend10   = calcOBVTrend(closes, volumes, 10)
+
+  let upVol = 0, upDays = 0, downVol = 0, downDays = 0
+  for (let i = n - 10; i < n; i++) {
+    const vol = volumes[i] || 0
+    if      (closes[i] > closes[i - 1]) { upVol   += vol; upDays++ }
+    else if (closes[i] < closes[i - 1]) { downVol += vol; downDays++ }
+  }
+  const avgUpVol   = upDays   > 0 ? upVol   / upDays   : 0
+  const avgDownVol = downDays > 0 ? downVol / downDays : 0
+  const volImbalance = avgUpVol > 0 && avgDownVol > avgUpVol * 1.3
+
+  const obvDivergence        = priceTrend10 > 0 && obvTrend10 === 'DOWN'
+  const flowDeteriorating    = obvDivergence || volImbalance
+
+  let flowDetail = ''
+  if (obvDivergence && volImbalance) {
+    flowDetail = `OBV乖離（価格↑・資金フロー↓）＋売り日の出来高が買い日の${(avgDownVol / avgUpVol * 100).toFixed(0)}%→機関投資家が本格的に売りに転じている`
+  } else if (obvDivergence) {
+    flowDetail = '価格は上昇しているがOBV（資金フロー）が低下→機関投資家が徐々に売り始めている'
+  } else if (volImbalance) {
+    flowDetail = `売り日の出来高が買い日の${(avgDownVol / avgUpVol * 100).toFixed(0)}%→売り圧力が買い圧力を上回っている`
+  } else {
+    flowDetail = '資金フロー正常・出来高配分に異常なし'
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Signal 2: 加速度の悪化（上昇モメンタムの減速・反転）
+  // 直近5日の変化率が直前5日と比較して大幅に縮小または反転
+  // ──────────────────────────────────────────────────────────────────
+  const recentChangePct = n >= 6  ? ((closes[n - 1] - closes[n - 6])  / closes[n - 6])  * 100 : 0
+  const priorChangePct  = n >= 11 ? ((closes[n - 6] - closes[n - 11]) / closes[n - 11]) * 100 : 0
+
+  const isDecelerating      = priorChangePct > 2 && recentChangePct < priorChangePct * 0.35
+  const isMomentumReversing = priorChangePct > 1 && recentChangePct < -0.5
+  const accelerationDeteriorating = isDecelerating || isMomentumReversing
+
+  let accDetail = ''
+  if (isMomentumReversing) {
+    accDetail = `直前5日 ${priorChangePct > 0 ? '+' : ''}${priorChangePct.toFixed(1)}% → 直近5日 ${recentChangePct.toFixed(1)}%：上昇モメンタムが反転→トレンド終了の可能性`
+  } else if (isDecelerating) {
+    accDetail = `加速度低下：直前5日 +${priorChangePct.toFixed(1)}% → 直近5日 +${recentChangePct.toFixed(1)}%（${(recentChangePct / priorChangePct * 100).toFixed(0)}%に減速）`
+  } else {
+    accDetail = `モメンタム正常（直前5日 ${priorChangePct > 0 ? '+' : ''}${priorChangePct.toFixed(1)}% / 直近5日 ${recentChangePct > 0 ? '+' : ''}${recentChangePct.toFixed(1)}%）`
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Signal 3: ボラティリティの悪化（日中レンジ拡大 ＋ 規律可能性急落）
+  // ATR（日中レンジ）が50%以上拡大 または 規律可能性が20pt以上急低下
+  // ──────────────────────────────────────────────────────────────────
+  let recentATR = null, priorATR = null
+  const hasHL = prices.some(p => p.high != null && p.low != null && p.low > 0)
+
+  if (hasHL) {
+    const recentRanges = [], priorRanges = []
+    for (let i = n - 5; i < n; i++) {
+      if (prices[i]?.high != null && prices[i]?.low != null && prices[i].low > 0)
+        recentRanges.push((prices[i].high - prices[i].low) / prices[i].low * 100)
+    }
+    for (let i = Math.max(0, n - 10); i < n - 5; i++) {
+      if (prices[i]?.high != null && prices[i]?.low != null && prices[i].low > 0)
+        priorRanges.push((prices[i].high - prices[i].low) / prices[i].low * 100)
+    }
+    if (recentRanges.length >= 3) recentATR = recentRanges.reduce((a, b) => a + b, 0) / recentRanges.length
+    if (priorRanges.length  >= 3) priorATR  = priorRanges.reduce( (a, b) => a + b, 0) / priorRanges.length
+  }
+
+  const atrExpanding = recentATR !== null && priorATR !== null && priorATR > 0 && recentATR > priorATR * 1.5
+
+  let recentDisc = null, priorDisc = null
+  if (n >= 16) {
+    recentDisc = calcDisciplinaryPossibility(closes.slice(n - 8), 7)
+    priorDisc  = calcDisciplinaryPossibility(closes.slice(n - 15, n - 7), 7)
+  }
+  const discDropping = recentDisc !== null && priorDisc !== null && recentDisc < priorDisc - 20
+
+  const volatilityDeteriorating = atrExpanding || discDropping
+
+  let volDetail = ''
+  if (atrExpanding && discDropping) {
+    volDetail = `ATR拡大（${priorATR?.toFixed(1)}%→${recentATR?.toFixed(1)}%）＋規律可能性急落（${priorDisc?.toFixed(0)}%→${recentDisc?.toFixed(0)}%）→値動きが大幅に荒れている`
+  } else if (atrExpanding) {
+    volDetail = `日中レンジ（ATR）が${((recentATR / priorATR - 1) * 100).toFixed(0)}%拡大→ボラティリティが上昇中`
+  } else if (discDropping) {
+    volDetail = `規律可能性が${priorDisc?.toFixed(0)}%→${recentDisc?.toFixed(0)}%に急低下→値動きが不規則になっている`
+  } else {
+    const atrStr = recentATR != null ? `ATR ${recentATR.toFixed(1)}%` : ''
+    const discStr = recentDisc != null ? `規律可能性 ${recentDisc.toFixed(0)}%` : ''
+    volDetail = `ボラティリティ安定${atrStr && discStr ? `（${atrStr}・${discStr}）` : ''}`
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // 総合エグジット判定（悪化シグナルの数 = 手仕舞い水準）
+  // ──────────────────────────────────────────────────────────────────
+  const exitLevel = [flowDeteriorating, accelerationDeteriorating, volatilityDeteriorating]
+    .filter(Boolean).length
+
+  const exitRecommendation = ['HOLD', 'EXIT_1_3', 'EXIT_2_3', 'EXIT_ALL'][exitLevel]
+
+  return {
+    exitLevel,
+    exitRecommendation,
+    flow:         { deteriorating: flowDeteriorating,         detail: flowDetail },
+    acceleration: { deteriorating: accelerationDeteriorating, detail: accDetail },
+    volatility:   { deteriorating: volatilityDeteriorating,   detail: volDetail },
+    recentChangePct: +recentChangePct.toFixed(1),
+    priorChangePct:  +priorChangePct.toFixed(1),
+    recentATR:       recentATR  != null ? +recentATR.toFixed(2)  : null,
+    priorATR:        priorATR   != null ? +priorATR.toFixed(2)   : null,
+    recentDisc:      recentDisc != null ? +recentDisc.toFixed(0) : null,
+    priorDisc:       priorDisc  != null ? +priorDisc.toFixed(0)  : null,
+  }
+}
+
 // macroAdjust は受け入れるが無視（CT理論はセクターマクロをスコアに含めない）
 export function predict(allPrices, days, macroAdjust = null) {
   const n        = allPrices.length
@@ -451,6 +577,8 @@ export function predict(allPrices, days, macroAdjust = null) {
     forecast = { outlook, text }
   }
 
+  const exitJudgment = calcExitJudgment(closes, volumes, allPrices)
+
   return {
     direction,
     confidence,
@@ -466,6 +594,7 @@ export function predict(allPrices, days, macroAdjust = null) {
     lastVolume:       volumes[n - 1] || null,
     initialVelocity,
     day2Confirmation,
+    exitJudgment,
     signals,
     chartData,
     forecast,

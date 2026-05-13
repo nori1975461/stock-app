@@ -254,6 +254,71 @@ function CTMetrics({ p }) {
   )
 }
 
+// ── 分散エグジット判断パネル ──────────────────────────────────────────────────
+function ExitPanel({ p }) {
+  const ex = p.exitJudgment
+  if (!ex) return null
+
+  const levelConfig = {
+    HOLD:     { label: '保有継続',      cls: 'exit-hold', icon: '✓',  desc: '3つの指標がすべて正常です。CT理論ではトレンドを引き続き保有して構いません。' },
+    EXIT_1_3: { label: '1/3 手仕舞い',  cls: 'exit-one',  icon: '⚠',  desc: '最初の警告シグナルが出ています。CT理論ではポジションの1/3を利確しリスクを軽減します。' },
+    EXIT_2_3: { label: '2/3 手仕舞い',  cls: 'exit-two',  icon: '⚠⚠', desc: '2つの指標が悪化しています。残りの半分も手仕舞いし、わずかなポジションのみ保持します。' },
+    EXIT_ALL: { label: '全決済',        cls: 'exit-all',  icon: '✕',  desc: '3指標すべてが悪化。CT理論の原則に従い残りのポジションをすべて手仕舞いする水準です。' },
+  }[ex.exitRecommendation]
+
+  const sigs = [
+    { label: '流れ',         icon: '〜', sub: 'OBV・出来高配分',   ...ex.flow },
+    { label: '加速度',       icon: '↗', sub: '5日モメンタム比較',  ...ex.acceleration },
+    { label: 'ボラティリティ', icon: '△', sub: 'ATR・規律可能性',   ...ex.volatility },
+  ]
+
+  const steps = ['保有継続', '1/3手仕舞い', '2/3手仕舞い', '全決済']
+
+  return (
+    <div className={`exit-panel exit-lv${ex.exitLevel}`}>
+      <div className="exit-panel-header">
+        <div className="exit-panel-title">分散エグジット判断</div>
+        <div className="exit-panel-sub">現在この銘柄を保有している場合のCT理論手仕舞いアドバイス</div>
+      </div>
+
+      <div className="exit-recommend-row">
+        <div className={`exit-badge ${levelConfig.cls}`}>
+          <span className="exit-badge-icon">{levelConfig.icon}</span>
+          <span className="exit-badge-label">{levelConfig.label}</span>
+        </div>
+        <p className="exit-recommend-desc">{levelConfig.desc}</p>
+      </div>
+
+      <div className="exit-step-track">
+        {steps.map((label, i) => (
+          <div key={i} className={`exit-step ${i < ex.exitLevel ? 'step-passed' : ''} ${i === ex.exitLevel ? 'step-current' : ''}`}>
+            <div className="exit-step-dot" />
+            <div className="exit-step-label">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="exit-signals">
+        {sigs.map((sig, i) => (
+          <div key={i} className={`exit-sig ${sig.deteriorating ? 'sig-bad' : 'sig-ok'}`}>
+            <div className="exit-sig-top">
+              <span className="exit-sig-icon">{sig.icon}</span>
+              <span className="exit-sig-label">{sig.label}</span>
+              <span className="exit-sig-sub">{sig.sub}</span>
+              <span className={`exit-sig-status ${sig.deteriorating ? 'status-bad' : 'status-ok'}`}>
+                {sig.deteriorating ? '悪化' : '正常'}
+              </span>
+            </div>
+            <p className="exit-sig-detail">{sig.detail}</p>
+          </div>
+        ))}
+      </div>
+
+      <p className="ct-note">※ 分散エグジットはCT理論のリスク管理手法です。実際の売却判断は相場全体の状況を加味してご自身でご判断ください。</p>
+    </div>
+  )
+}
+
 // ── 先導株パネル ──────────────────────────────────────────────────────────────
 function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -517,6 +582,8 @@ function DetailCard({ item, onClose }) {
       </div>
 
       <CTMetrics p={p} />
+
+      <ExitPanel p={p} />
 
       {p.forecast && (
         <div className="forecast">
@@ -892,6 +959,8 @@ export default function App() {
           </div>
 
           <CTMetrics p={result} />
+
+          <ExitPanel p={result} />
 
           {result.forecast && (
             <div className="forecast">

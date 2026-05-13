@@ -1511,3 +1511,190 @@ h1 {
   .leader-item-right { border-left: none; border-top: 1px solid rgba(212,168,75,0.2); flex-direction: row; gap: 12px; }
   .screener-signals { padding-left: 14px; }
 }
+
+/* ─── 分散エグジット判断パネル ──────────────────────────────── */
+.exit-panel {
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1.5px solid;
+}
+
+.exit-lv0 { background: rgba(46,160,80,0.06);  border-color: rgba(46,160,80,0.3); }
+.exit-lv1 { background: rgba(255,170,0,0.07);  border-color: rgba(255,170,0,0.4); }
+.exit-lv2 { background: rgba(220,100,0,0.08);  border-color: rgba(220,100,0,0.4); }
+.exit-lv3 {
+  background: rgba(192,57,43,0.08);
+  border-color: rgba(192,57,43,0.4);
+  border-left: 5px solid #c0392b;
+}
+
+.exit-panel-header { margin-bottom: 12px; }
+
+.exit-panel-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111111;
+  letter-spacing: 0.04em;
+}
+
+.exit-panel-sub {
+  font-size: 0.72rem;
+  color: #555555;
+  margin-top: 2px;
+}
+
+.exit-recommend-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.exit-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 2px solid;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.exit-hold { background: rgba(46,160,80,0.15);  color: #1a7a3a; border-color: rgba(46,160,80,0.45); }
+.exit-one  { background: rgba(255,170,0,0.15);  color: #7a5000; border-color: rgba(255,170,0,0.55); }
+.exit-two  { background: rgba(220,100,0,0.15);  color: #6a2800; border-color: rgba(220,100,0,0.55); }
+.exit-all  { background: rgba(192,57,43,0.15);  color: #8c1c2a; border-color: rgba(192,57,43,0.55); }
+
+.exit-badge-icon  { font-size: 1.05rem; }
+.exit-badge-label { font-size: 0.9rem; }
+
+.exit-recommend-desc {
+  font-size: 0.82rem;
+  color: #333333;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ステップインジケーター（保有→1/3→2/3→全決済） */
+.exit-step-track {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  position: relative;
+  padding-top: 2px;
+}
+
+.exit-step-track::before {
+  content: '';
+  position: absolute;
+  top: 11px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: #e0d8cc;
+  z-index: 0;
+}
+
+.exit-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  z-index: 1;
+}
+
+.exit-step-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #d8ccc0;
+  border: 2px solid #c8b8a8;
+  transition: all 0.2s;
+}
+
+.step-passed .exit-step-dot {
+  background: #e09040;
+  border-color: #c07020;
+}
+
+.step-current .exit-step-dot {
+  width: 26px;
+  height: 26px;
+  background: #c0392b;
+  border-color: #8c1c2a;
+  box-shadow: 0 0 10px rgba(192,57,43,0.5);
+  margin-top: -3px;
+}
+
+.exit-step-label {
+  font-size: 0.65rem;
+  color: #999999;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.step-passed  .exit-step-label { color: #8b6914; font-weight: 600; }
+.step-current .exit-step-label { color: #c0392b; font-weight: 700; font-size: 0.7rem; }
+
+/* 3指標シグナル */
+.exit-signals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.exit-sig {
+  padding: 10px 13px;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.sig-ok  { background: rgba(46,160,80,0.06);  border-color: rgba(46,160,80,0.35); }
+.sig-bad { background: rgba(192,57,43,0.06);  border-color: #c0392b; }
+
+.exit-sig-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.exit-sig-icon  { font-size: 0.95rem; flex-shrink: 0; }
+.exit-sig-label { font-size: 0.85rem; font-weight: 700; color: #111111; }
+
+.exit-sig-sub {
+  font-size: 0.7rem;
+  color: #888888;
+}
+
+.exit-sig-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.status-ok  { background: rgba(46,160,80,0.18);  color: #1a7a3a; }
+.status-bad { background: rgba(192,57,43,0.18);  color: #8c1c2a; }
+
+.exit-sig-detail {
+  font-size: 0.78rem;
+  color: #444444;
+  line-height: 1.55;
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .exit-recommend-row { flex-direction: column; align-items: flex-start; }
+  .exit-step-label { font-size: 0.6rem; }
+}
