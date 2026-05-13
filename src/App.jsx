@@ -4,6 +4,7 @@ import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
 import { getSameIndustryRecommendations, getStockSector } from './utils/industries'
 import { MACRO_CONTEXT, SECTOR_MACRO } from './utils/macroContext'
+import { CT_UNIVERSE, CT_LEADERS, LEADER_RANK_LABEL, LEADER_RANK_CLASS } from './utils/ctUniverse'
 
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位']
 const MAX_TICKERS = 5
@@ -35,9 +36,7 @@ function StockChart({ chartData }) {
         )}
         <Tooltip
           formatter={(value, name) =>
-            name === '出来高'
-              ? fmtVol(value)
-              : (typeof value === 'number' ? value.toFixed(2) : value)
+            name === '出来高' ? fmtVol(value) : (typeof value === 'number' ? value.toFixed(2) : value)
           }
         />
         <Legend />
@@ -62,7 +61,6 @@ function generateBuyAdvice(rankedItems) {
   const reasons = []
   let comparisonNote = null
 
-  // OBV + 規律可能性
   if (p.obvTrend === 'UP') {
     if (p.disciplinaryPct != null && p.disciplinaryPct >= 70) {
       reasons.push(`OBV（資金フロー）上昇 + 規律可能性 ${p.disciplinaryPct}%：機関投資家の買いが継続し動きも予測しやすい`)
@@ -70,33 +68,21 @@ function generateBuyAdvice(rankedItems) {
       reasons.push('OBV（資金フロー）が上昇中：機関投資家・大口の買いが続いている')
     }
   }
-
-  // 停滞シグナル
   if (p.isStagnating) {
     reasons.push('上昇後に出来高減少で価格が安定（停滞）：売り手が不在→上昇継続の可能性が高い')
   }
-
-  // マグネット効果（高値突破）
   if (p.magnetEffect && (p.magnetEffect.status === 'NEW_HIGH' || p.magnetEffect.status === 'BREAKOUT')) {
     reasons.push(`過去高値を突破（+${p.magnetEffect.distancePct}%）：上値抵抗を超えた→慣性の法則で上昇継続`)
   }
-
-  // 慣性の法則
   if (p.trendDays >= 4) {
     reasons.push(`${p.trendDays}日連続上昇：慣性の法則が発動中—強いトレンドは続く`)
   }
-
-  // 出来高＋上昇
   if (p.relativeVolume !== null && p.relativeVolume > 1.2 && p.direction === 'UP') {
     reasons.push(`出来高 ${(p.relativeVolume * 100).toFixed(0)}%（平均比）：資金流入を伴う健全な上昇`)
   }
-
-  // 規律可能性（単体）
   if (p.disciplinaryPct != null && p.disciplinaryPct >= 75 && !reasons.some(r => r.includes('規律'))) {
     reasons.push(`規律可能性 ${p.disciplinaryPct}%：値動きが予測しやすい状態`)
   }
-
-  // セクターマクロ（参考）
   const sector = getStockSector(winner.ticker)
   const sm     = sector ? SECTOR_MACRO[sector] : null
   if (sm && sm.score >= 2) {
@@ -144,7 +130,7 @@ function IndicatorBadges({ p }) {
 }
 
 function CTMetrics({ p }) {
-  const magDist = p.magnetEffect?.distancePct
+  const magDist   = p.magnetEffect?.distancePct
   const magStatus = p.magnetEffect?.status
   return (
     <>
@@ -195,6 +181,250 @@ function CTMetrics({ p }) {
   )
 }
 
+// ── 先導株パネル ──────────────────────────────────────────────────────────────
+function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet }) {
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [results, setResults]         = useState(null)
+  const [error, setError]             = useState(null)
+
+  const run = async () => {
+    if (!gasUrl) { setError('GAS URLを入力してください。'); return }
+    setIsAnalyzing(true); setError(null); setResults(null)
+    const settled = await Promise.allSettled(
+      CT_LEADERS.map(s => fetchStockData(s.ticker, { gasUrl, apiKey: '' }))
+    )
+    const live = settled.map((r, i) => {
+      const s = CT_LEADERS[i]
+      if (r.status === 'fulfilled' && r.value.prices.length > 0) {
+        return { ...s, name: r.value.name || s.name, prediction: predict(r.value.prices, 14) }
+      }
+      return { ...s, prediction: null }
+    }).filter(r => r.prediction !== null)
+
+    live.sort((a, b) => b.prediction.score - a.prediction.score)
+    setResults(live)
+    setIsAnalyzing(false)
+  }
+
+  const topTickers = results ? results.slice(0, 5).map(r => r.ticker).join(',') : ''
+
+  return (
+    <div className="card leader-panel">
+      <div className="leader-panel-header">
+        <div>
+          <div className="leader-panel-title">先導株分析</div>
+          <div className="leader-panel-subtitle">
+            CLEAR TRADE理論：市場を牽引する{CT_LEADERS.length}銘柄をリアルタイム分析
+          </div>
+        </div>
+        <button className="btn-leader" onClick={run} disabled={isAnalyzing}>
+          {isAnalyzing ? '分析中...' : '先導株を分析'}
+        </button>
+      </div>
+
+      <div className="leader-intro">
+        <p>
+          CT理論では「先導株（市場全体を先行して動かす銘柄）を特定し、その流れに乗る」ことが最重要戦略です。
+          全体の<strong>2〜3%</strong>しか存在しない先導株を見極め、その中で最も強いシグナルが出ている銘柄に集中することが原則です。
+        </p>
+      </div>
+
+      {error && <div className="nikkei-error">{error}</div>}
+
+      {results && (
+        <>
+          <div className="leader-results">
+            {results.map((item, i) => {
+              const p = item.prediction
+              const isTop = i === 0
+              return (
+                <div key={item.ticker} className={`leader-item ${isTop ? 'leader-item-top' : ''}`}>
+                  <div className="leader-item-left">
+                    <div className={`leader-rank-badge ${LEADER_RANK_CLASS[item.leaderRank]}`}>
+                      {LEADER_RANK_LABEL[item.leaderRank]}
+                    </div>
+                    <div className="leader-ticker">{item.ticker}</div>
+                    <div className="leader-name">{item.name}</div>
+                    <div className="leader-sector-tag">{item.sector}</div>
+                  </div>
+                  <div className="leader-item-center">
+                    <div className={`leader-direction ${p.direction === 'UP' ? 'up' : 'down'}`}>
+                      {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
+                    </div>
+                    <div className="leader-score">
+                      スコア <span className={p.score > 0 ? 'val-up' : 'val-down'}>
+                        {p.score > 0 ? '+' : ''}{p.score}
+                      </span>
+                    </div>
+                    <div className="leader-conf">確信度 {p.confidence}%</div>
+                    <IndicatorBadges p={p} />
+                  </div>
+                  <div className="leader-item-right">
+                    <p className="leader-reason">{item.leaderReason}</p>
+                    <button
+                      className="btn-select-ticker"
+                      onClick={() => onSelectTicker(item.ticker)}
+                    >
+                      詳細分析 →
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          {topTickers && (
+            <button className="btn-select-set" onClick={() => onSelectSet(topTickers)}>
+              ▶ 上位銘柄を比較分析する（フォームに入力）
+            </button>
+          )}
+          <p className="disclaimer" style={{ marginTop: 12 }}>
+            ※ 先導株リストは2026年5月調査時点。市場環境の変化により随時更新が必要です。
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── CTスクリーニングパネル ──────────────────────────────────────────────────
+function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
+  const [isScanning, setIsScanning]   = useState(false)
+  const [progress, setProgress]       = useState({ current: 0, total: 0 })
+  const [results, setResults]         = useState(null)
+  const [error, setError]             = useState(null)
+  const [scannedCount, setScannedCount] = useState(0)
+
+  const BATCH = 8
+
+  const run = async () => {
+    if (!gasUrl) { setError('GAS URLを入力してください。'); return }
+    setIsScanning(true); setError(null); setResults(null)
+    setProgress({ current: 0, total: CT_UNIVERSE.length })
+
+    const allResults = []
+
+    for (let i = 0; i < CT_UNIVERSE.length; i += BATCH) {
+      const batch = CT_UNIVERSE.slice(i, i + BATCH)
+      const settled = await Promise.allSettled(
+        batch.map(s => fetchStockData(s.ticker, { gasUrl, apiKey: '' }))
+      )
+      settled.forEach((r, j) => {
+        if (r.status === 'fulfilled' && r.value.prices.length >= 20) {
+          const s = batch[j]
+          allResults.push({
+            ticker:     s.ticker,
+            name:       r.value.name || s.name,
+            sector:     s.sector,
+            prediction: predict(r.value.prices, 14),
+          })
+        }
+      })
+      const newCurrent = Math.min(i + BATCH, CT_UNIVERSE.length)
+      setProgress({ current: newCurrent, total: CT_UNIVERSE.length })
+    }
+
+    // CT理論ソート：①UP優先 ②スコア降順 ③規律可能性降順
+    const sorted = allResults.sort((a, b) => {
+      const aUp = a.prediction.direction === 'UP' ? 1 : 0
+      const bUp = b.prediction.direction === 'UP' ? 1 : 0
+      if (aUp !== bUp) return bUp - aUp
+      if (b.prediction.score !== a.prediction.score) return b.prediction.score - a.prediction.score
+      return (b.prediction.disciplinaryPct || 0) - (a.prediction.disciplinaryPct || 0)
+    })
+
+    setScannedCount(allResults.length)
+    setResults(sorted.slice(0, 5))
+    setIsScanning(false)
+  }
+
+  const pct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
+  const topTickers = results ? results.map(r => r.ticker).join(',') : ''
+
+  return (
+    <div className="card screener-panel">
+      <div className="screener-header">
+        <div>
+          <div className="screener-title">CT銘柄スクリーニング</div>
+          <div className="screener-subtitle">
+            {CT_UNIVERSE.length}銘柄をCLEAR TRADE理論でスキャンし、上位5銘柄を自動選定
+          </div>
+        </div>
+        <button className="btn-screener" onClick={run} disabled={isScanning}>
+          {isScanning ? 'スキャン中...' : '上位5銘柄を探す'}
+        </button>
+      </div>
+
+      {error && <div className="nikkei-error">{error}</div>}
+
+      {isScanning && (
+        <div className="screen-progress-wrap">
+          <div className="screen-progress-track">
+            <div className="screen-progress-bar" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="screen-progress-text">
+            {progress.current} / {progress.total} 銘柄をスキャン中... {pct}%
+          </div>
+        </div>
+      )}
+
+      {results && (
+        <>
+          <div className="screener-summary">
+            {scannedCount}銘柄をスキャン完了 — CT総合スコア上位5銘柄
+          </div>
+          <div className="screener-results">
+            {results.map((item, i) => {
+              const p = item.prediction
+              return (
+                <div key={item.ticker} className={`screener-item ${i === 0 ? 'screener-item-top' : ''}`}>
+                  <div className="screener-rank">{RANK_LABELS[i]}</div>
+                  <div className="screener-body">
+                    <div className="screener-name-row">
+                      <span className="screener-ticker">{item.ticker}</span>
+                      <span className="screener-name">{item.name}</span>
+                      <span className="screener-sector">{item.sector}</span>
+                    </div>
+                    <div className="screener-score-row">
+                      <span className={`screener-dir ${p.direction === 'UP' ? 'up' : 'down'}`}>
+                        {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
+                      </span>
+                      <span className="screener-score-val">
+                        スコア {p.score > 0 ? '+' : ''}{p.score}
+                      </span>
+                      <span className="screener-conf">確信度 {p.confidence}%</span>
+                    </div>
+                    <IndicatorBadges p={p} />
+                    <div className="screener-signals">
+                      {p.signals.slice(0, 2).map((s, si) => (
+                        <div key={si} className="screener-signal-line">・{s}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    className="btn-select-ticker"
+                    onClick={() => onSelectTicker(item.ticker)}
+                  >
+                    詳細 →
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+          {topTickers && (
+            <button className="btn-select-set" onClick={() => onSelectSet(topTickers)}>
+              ▶ この5銘柄を比較分析する（フォームに入力）
+            </button>
+          )}
+          <p className="disclaimer" style={{ marginTop: 12 }}>
+            ※ スキャン結果はCT理論スコアの瞬間値です。投資判断の最終責任はご自身にあります。
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── 詳細カード ─────────────────────────────────────────────────────────────
 function DetailCard({ item, onClose }) {
   const p = item.prediction
   return (
@@ -281,21 +511,18 @@ function DetailCard({ item, onClose }) {
   )
 }
 
+// ── 日経平均パネル ─────────────────────────────────────────────────────────
 function NikkeiPanel({ gasUrl, apiKey }) {
-  const [data, setData] = useState(null)
+  const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError]     = useState(null)
   const mc = MACRO_CONTEXT
 
   const heatLabel = mc.heatLevel === 'OVERHEAT' ? '⚠ 過熱ぎみ（短期）'
-    : mc.heatLevel === 'ROOM_TO_RISE' ? '↑ 上昇余地あり'
-    : '● 適正水準'
+    : mc.heatLevel === 'ROOM_TO_RISE' ? '↑ 上昇余地あり' : '● 適正水準'
   const heatClass = mc.heatLevel === 'OVERHEAT' ? 'overheat'
-    : mc.heatLevel === 'ROOM_TO_RISE' ? 'room'
-    : 'neutral'
-
-  const weeklyClass = mc.weeklyOutlook === 'UP' ? 'up'
-    : mc.weeklyOutlook === 'DOWN' ? 'down' : 'uncertain'
+    : mc.heatLevel === 'ROOM_TO_RISE' ? 'room' : 'neutral'
+  const weeklyClass = mc.weeklyOutlook === 'UP' ? 'up' : mc.weeklyOutlook === 'DOWN' ? 'down' : 'uncertain'
   const weeklyLabel = mc.weeklyOutlook === 'UP' ? '▲ 上昇予測'
     : mc.weeklyOutlook === 'DOWN' ? '▼ 下落予測' : '━ 方向性不透明（調整→もみ合い）'
 
@@ -304,8 +531,7 @@ function NikkeiPanel({ gasUrl, apiKey }) {
     setLoading(true); setError(null)
     try {
       const { prices } = await fetchStockData('^N225', { gasUrl, apiKey })
-      const pred = predict(prices, 7)
-      setData(pred)
+      setData(predict(prices, 7))
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
@@ -414,6 +640,7 @@ function NikkeiPanel({ gasUrl, apiKey }) {
   )
 }
 
+// ── メインApp ──────────────────────────────────────────────────────────────
 export default function App() {
   const [gasUrl, setGasUrl]         = useState(() => localStorage.getItem('gas_url') || '')
   const [apiKey, setApiKey]         = useState(() => localStorage.getItem('av_api_key') || '')
@@ -422,8 +649,18 @@ export default function App() {
   const [loading, setLoading]       = useState(false)
   const [error, setError]           = useState(null)
   const [result, setResult]         = useState(null)
-  const [rankingResults, setRankingResults] = useState(null)
-  const [selectedDetail, setSelectedDetail] = useState(null)
+  const [rankingResults, setRankingResults]   = useState(null)
+  const [selectedDetail, setSelectedDetail]   = useState(null)
+
+  // スクリーナー・先導株から銘柄をフォームに送り込むコールバック
+  const handleSelectTicker = (ticker) => {
+    setSymbols(ticker)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const handleSelectSet = (tickersCsv) => {
+    setSymbols(tickersCsv)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -444,11 +681,8 @@ export default function App() {
       return
     }
 
-    setLoading(true)
-    setError(null)
-    setResult(null)
-    setRankingResults(null)
-    setSelectedDetail(null)
+    setLoading(true); setError(null); setResult(null)
+    setRankingResults(null); setSelectedDetail(null)
 
     if (tickerList.length === 1) {
       try {
@@ -500,6 +734,7 @@ export default function App() {
     <div className="app">
       <h1>株価予測アプリ</h1>
 
+      {/* ── 入力フォーム ── */}
       <form onSubmit={handleSubmit} className="card">
         <div className="field">
           <label>GAS URL <span className="badge">日本株・米国株対応</span></label>
@@ -558,6 +793,21 @@ export default function App() {
 
       {error && <div className="error">{error}</div>}
 
+      {/* ── 先導株パネル ── */}
+      <LeaderPanel
+        gasUrl={gasUrl.trim()}
+        onSelectTicker={handleSelectTicker}
+        onSelectSet={handleSelectSet}
+      />
+
+      {/* ── CTスクリーニングパネル ── */}
+      <CTScreenerPanel
+        gasUrl={gasUrl.trim()}
+        onSelectTicker={handleSelectTicker}
+        onSelectSet={handleSelectSet}
+      />
+
+      {/* ── 単体分析結果 ── */}
       {result && (
         <div className="card result">
           <div className="result-ticker-label">{result.ticker}</div>
@@ -635,6 +885,7 @@ export default function App() {
         </div>
       )}
 
+      {/* ── 比較ランキング ── */}
       {rankingResults && (() => {
         const advice = generateBuyAdvice(rankingResults)
         return (
