@@ -12,6 +12,19 @@ function calcRelativeVolume(volumes, period = 20) {
   return avg > 0 ? today / avg : null
 }
 
+// 直近3日平均 vs 過去20日平均（1日の異常値に左右されない安定版）
+function calcRelativeVolumeStable(volumes, recentDays = 3, period = 20) {
+  const n = volumes.length
+  if (n < recentDays + period + 1) return null
+  const recentSlice = volumes.slice(n - recentDays, n).filter(v => v > 0)
+  if (recentSlice.length === 0) return null
+  const recentAvg = recentSlice.reduce((a, b) => a + b, 0) / recentSlice.length
+  const histSlice = volumes.slice(n - recentDays - period, n - recentDays).filter(v => v > 0)
+  if (histSlice.length < 5) return null
+  const histAvg = histSlice.reduce((a, b) => a + b, 0) / histSlice.length
+  return histAvg > 0 ? recentAvg / histAvg : null
+}
+
 function calcOBV(closes, volumes) {
   const obv = [0]
   for (let i = 1; i < closes.length; i++) {
@@ -223,22 +236,24 @@ function calcExitJudgment(closes, volumes, prices) {
 
   // ──────────────────────────────────────────────────────────────────
   // Signal 1: 流れの悪化（OBV乖離 ＋ 出来高配分の逆転）
-  // 価格は上昇しているのに機関投資家の資金フローが低下している状態
+  // OBV 20日窓・出来高配分 15日窓に拡張（単日ノイズを除去）
+  // 閾値を1.5倍に引き上げ（1.3倍だと通常の揺れでも発動する）
   // ──────────────────────────────────────────────────────────────────
-  const priceTrend10 = closes[n - 1] > closes[n - 11] ? 1 : -1
-  const obvTrend10   = calcOBVTrend(closes, volumes, 10)
+  const priceTrend15 = closes[n - 1] > closes[n - 16] ? 1 : -1
+  const obvTrend20   = calcOBVTrend(closes, volumes, 20)
 
   let upVol = 0, upDays = 0, downVol = 0, downDays = 0
-  for (let i = n - 10; i < n; i++) {
+  for (let i = n - 15; i < n; i++) {
     const vol = volumes[i] || 0
     if      (closes[i] > closes[i - 1]) { upVol   += vol; upDays++ }
     else if (closes[i] < closes[i - 1]) { downVol += vol; downDays++ }
   }
   const avgUpVol   = upDays   > 0 ? upVol   / upDays   : 0
   const avgDownVol = downDays > 0 ? downVol / downDays : 0
-  const volImbalance = avgUpVol > 0 && avgDownVol > avgUpVol * 1.3
+  // 閾値 1.3→1.5：売り圧力が買いの1.5倍以上で初めて警告
+  const volImbalance = avgUpVol > 0 && avgDownVol > avgUpVol * 1.5
 
-  const obvDivergence        = priceTrend10 > 0 && obvTrend10 === 'DOWN'
+  const obvDivergence        = priceTrend15 > 0 && obvTrend20 === 'DOWN'
   const flowDeteriorating    = obvDivergence || volImbalance
 
   let flowDetail = ''
@@ -247,29 +262,31 @@ function calcExitJudgment(closes, volumes, prices) {
   } else if (obvDivergence) {
     flowDetail = '価格は上昇しているがOBV（資金フロー）が低下→機関投資家が徐々に売り始めている'
   } else if (volImbalance) {
-    flowDetail = `売り日の出来高が買い日の${(avgDownVol / avgUpVol * 100).toFixed(0)}%→売り圧力が買い圧力を上回っている`
+    flowDetail = `売り日の出来高が買い日の${(avgDownVol / avgUpVol * 100).toFixed(0)}%→売り圧力が買い圧力を大幅に上回っている`
   } else {
     flowDetail = '資金フロー正常・出来高配分に異常なし'
   }
 
   // ──────────────────────────────────────────────────────────────────
   // Signal 2: 加速度の悪化（上昇モメンタムの減速・反転）
-  // 直近5日の変化率が直前5日と比較して大幅に縮小または反転
+  // 8日窓比較に拡張し閾値を強化（1日の小幅下落では発動しない）
+  // priorChangePct > 3%・recentChangePct < -1.0% に引き上げ
   // ──────────────────────────────────────────────────────────────────
-  const recentChangePct = n >= 6  ? ((closes[n - 1] - closes[n - 6])  / closes[n - 6])  * 100 : 0
-  const priorChangePct  = n >= 11 ? ((closes[n - 6] - closes[n - 11]) / closes[n - 11]) * 100 : 0
+  const recentChangePct = n >= 9  ? ((closes[n - 1] - closes[n - 9])  / closes[n - 9])  * 100 : 0
+  const priorChangePct  = n >= 17 ? ((closes[n - 9] - closes[n - 17]) / closes[n - 17]) * 100 : 0
 
-  const isDecelerating      = priorChangePct > 2 && recentChangePct < priorChangePct * 0.35
-  const isMomentumReversing = priorChangePct > 1 && recentChangePct < -0.5
+  // 閾値強化：priorChangePct > 3（旧:1）、recentChangePct < -1.0（旧:-0.5）
+  const isDecelerating      = priorChangePct > 3 && recentChangePct < priorChangePct * 0.3
+  const isMomentumReversing = priorChangePct > 2 && recentChangePct < -1.0
   const accelerationDeteriorating = isDecelerating || isMomentumReversing
 
   let accDetail = ''
   if (isMomentumReversing) {
-    accDetail = `直前5日 ${priorChangePct > 0 ? '+' : ''}${priorChangePct.toFixed(1)}% → 直近5日 ${recentChangePct.toFixed(1)}%：上昇モメンタムが反転→トレンド終了の可能性`
+    accDetail = `直前8日 ${priorChangePct > 0 ? '+' : ''}${priorChangePct.toFixed(1)}% → 直近8日 ${recentChangePct.toFixed(1)}%：上昇モメンタムが明確に反転→トレンド終了の可能性`
   } else if (isDecelerating) {
-    accDetail = `加速度低下：直前5日 +${priorChangePct.toFixed(1)}% → 直近5日 +${recentChangePct.toFixed(1)}%（${(recentChangePct / priorChangePct * 100).toFixed(0)}%に減速）`
+    accDetail = `加速度低下：直前8日 +${priorChangePct.toFixed(1)}% → 直近8日 +${recentChangePct.toFixed(1)}%（${(recentChangePct / priorChangePct * 100).toFixed(0)}%に急減速）`
   } else {
-    accDetail = `モメンタム正常（直前5日 ${priorChangePct > 0 ? '+' : ''}${priorChangePct.toFixed(1)}% / 直近5日 ${recentChangePct > 0 ? '+' : ''}${recentChangePct.toFixed(1)}%）`
+    accDetail = `モメンタム正常（直前8日 ${priorChangePct > 0 ? '+' : ''}${priorChangePct.toFixed(1)}% / 直近8日 ${recentChangePct > 0 ? '+' : ''}${recentChangePct.toFixed(1)}%）`
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -349,20 +366,24 @@ export function predict(allPrices, days, macroAdjust = null) {
   const lastClose = closes[n - 1]
   const signals  = []
   let score = 0
+  let stableScore = 0  // ランキング用安定スコア（2日目確認・初速を除く7指標）
 
   // ── 出来高分析（量＋方向）────────────────────────────────
-  const relativeVolume = hasVolume ? calcRelativeVolume(volumes, 20) : null
+  // 3日平均 vs 過去20日平均で安定化（1日の異常値に左右されない）
+  const relativeVolume = hasVolume
+    ? (calcRelativeVolumeStable(volumes, 3, 20) ?? calcRelativeVolume(volumes, 20))
+    : null
   const priceUp = n >= 2 && closes[n - 1] > closes[n - 2]
 
   if (relativeVolume !== null) {
     if (relativeVolume > 2.5) {
-      score -= 2
+      score -= 2; stableScore -= 2
       signals.push(`出来高が平均の${relativeVolume.toFixed(1)}倍：急増は反転シグナル（高値つかみのリスク）`)
     } else if (relativeVolume > 1.3 && priceUp) {
-      score += 2
+      score += 2; stableScore += 2
       signals.push(`出来高${(relativeVolume * 100).toFixed(0)}%で株価上昇：資金が流入している強い買い`)
     } else if (relativeVolume > 1.3 && !priceUp) {
-      score -= 1
+      score -= 1; stableScore -= 1
       signals.push('出来高増加で株価下落：売り圧力が強い')
     } else if (relativeVolume < 0.5) {
       signals.push(`出来高が平均の${(relativeVolume * 100).toFixed(0)}%：売買が少ない（様子見）`)
@@ -376,13 +397,13 @@ export function predict(allPrices, days, macroAdjust = null) {
 
   if (disciplinaryPct !== null) {
     if (disciplinaryPct >= 80) {
-      score += 2
+      score += 2; stableScore += 2
       signals.push(`規律可能性 ${disciplinaryPct.toFixed(0)}%：非常に予測しやすい動きをしている`)
     } else if (disciplinaryPct >= 60) {
-      score += 1
+      score += 1; stableScore += 1
       signals.push(`規律可能性 ${disciplinaryPct.toFixed(0)}%：ある程度の方向感がある`)
     } else if (disciplinaryPct < 40) {
-      score -= 2
+      score -= 2; stableScore -= 2
       signals.push(`規律可能性 ${disciplinaryPct.toFixed(0)}%：値動きがランダムで取引不向き`)
     } else {
       signals.push(`規律可能性 ${disciplinaryPct.toFixed(0)}%：やや不規則な動き`)
@@ -390,14 +411,15 @@ export function predict(allPrices, days, macroAdjust = null) {
   }
 
   // ── OBV（On Balance Volume）────────────────────────────────
-  const obvTrend = hasVolume ? calcOBVTrend(closes, volumes, 10) : 'FLAT'
+  // 15日窓でノイズを軽減（10日だと1日の外れ値で反転しやすい）
+  const obvTrend = hasVolume ? calcOBVTrend(closes, volumes, 15) : 'FLAT'
 
   if (hasVolume) {
     if (obvTrend === 'UP') {
-      score += 1
+      score += 1; stableScore += 1
       signals.push('OBV（資金フロー）上昇：大口・機関投資家の買いが継続中')
     } else if (obvTrend === 'DOWN') {
-      score -= 1
+      score -= 1; stableScore -= 1
       signals.push('OBV（資金フロー）下降：大口の資金が流出している')
     } else {
       signals.push('OBV（資金フロー）横ばい：大口の方向感なし')
@@ -408,7 +430,7 @@ export function predict(allPrices, days, macroAdjust = null) {
   const isStagnating = hasVolume ? detectStagnation(closes, volumes, 5) : false
 
   if (isStagnating) {
-    score += 1
+    score += 1; stableScore += 1
     signals.push('停滞シグナル検出：上昇後に出来高が減り価格が安定→売り手不在で上昇継続の可能性')
   }
 
@@ -416,13 +438,13 @@ export function predict(allPrices, days, macroAdjust = null) {
   const magnetEffect = calcMagnetEffect(closes, 90)
 
   if (magnetEffect.status === 'NEW_HIGH') {
-    score += 2
+    score += 2; stableScore += 2
     signals.push(`過去高値を大きく上回る（+${magnetEffect.distancePct}%）：慣性の法則が働き上昇継続しやすい`)
   } else if (magnetEffect.status === 'BREAKOUT') {
-    score += 2
+    score += 2; stableScore += 2
     signals.push(`過去の壁（高値）を突破（+${magnetEffect.distancePct}%）：次の上昇ステージへの移行シグナル`)
   } else if (magnetEffect.status === 'RESISTANCE') {
-    score -= 1
+    score -= 1; stableScore -= 1
     signals.push(`過去高値（${magnetEffect.historicalHigh}）に接近（${magnetEffect.distancePct}%）：高値の壁（抵抗）に注意`)
   } else if (magnetEffect.distancePct !== null) {
     signals.push(`過去高値より${Math.abs(magnetEffect.distancePct)}%下：上昇には高値の壁を超える必要あり`)
@@ -432,10 +454,10 @@ export function predict(allPrices, days, macroAdjust = null) {
   const trendDays = countTrendDays(closes)
 
   if (trendDays >= 5) {
-    score += 1
+    score += 1; stableScore += 1
     signals.push(`${trendDays}日連続上昇：慣性の法則—強いトレンドは続く`)
   } else if (trendDays <= -5) {
-    score -= 1
+    score -= 1; stableScore -= 1
     signals.push(`${Math.abs(trendDays)}日連続下落：下降トレンドが継続中`)
   } else if (trendDays > 0) {
     signals.push(`${trendDays}日連続上昇（勢い確認中）`)
@@ -446,17 +468,18 @@ export function predict(allPrices, days, macroAdjust = null) {
   }
 
   // ── ローソク足パターン（陽線・陰線の比率）────────────────
-  const candle = analyzeCandlePattern(allPrices, 5)
+  // 10日窓に拡張（5日だと1〜2本の差でスコアが反転しやすい）
+  const candle = analyzeCandlePattern(allPrices, 10)
 
-  if (candle.total >= 3) {
-    if (candle.bullishCount >= 4) {
-      score += 1
-      signals.push(`直近5本のうち${candle.bullishCount}本が陽線：買い優勢`)
-    } else if (candle.bearishCount >= 4) {
-      score -= 1
-      signals.push(`直近5本のうち${candle.bearishCount}本が陰線：売り優勢`)
+  if (candle.total >= 6) {
+    if (candle.bullishCount >= 7) {
+      score += 1; stableScore += 1
+      signals.push(`直近10本のうち${candle.bullishCount}本が陽線：買い優勢`)
+    } else if (candle.bearishCount >= 7) {
+      score -= 1; stableScore -= 1
+      signals.push(`直近10本のうち${candle.bearishCount}本が陰線：売り優勢`)
     } else {
-      signals.push(`直近5本：陽線${candle.bullishCount}本・陰線${candle.bearishCount}本（拮抗）`)
+      signals.push(`直近10本：陽線${candle.bullishCount}本・陰線${candle.bearishCount}本（拮抗）`)
     }
   }
 
@@ -583,6 +606,7 @@ export function predict(allPrices, days, macroAdjust = null) {
     direction,
     confidence,
     score,
+    stableScore,
     lastClose,
     relativeVolume:   relativeVolume  !== null ? +relativeVolume.toFixed(2)  : null,
     disciplinaryPct:  disciplinaryPct !== null ? +disciplinaryPct.toFixed(0) : null,

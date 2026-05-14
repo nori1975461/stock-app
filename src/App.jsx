@@ -102,14 +102,14 @@ function generateBuyAdvice(rankedItems) {
     reasons.push(`${sector}セクター：AI・半導体需要の追い風（マクロ参考 +${sm.score}）`)
   }
 
-  const scoreDiff = p.score - runnerUp.prediction.score
+  const scoreDiff = p.stableScore - runnerUp.prediction.stableScore
   const discDiff  = (p.disciplinaryPct || 0) - (runnerUp.prediction.disciplinaryPct || 0)
   if (discDiff > 10) {
-    comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}より規律可能性が${discDiff.toFixed(0)}%高い（より予測しやすい）。スコア差 +${scoreDiff}点`
+    comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}より規律可能性が${discDiff.toFixed(0)}%高い（より予測しやすい）。安定スコア差 +${scoreDiff}点`
   } else if (scoreDiff > 0) {
-    comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}とのスコア差：+${scoreDiff}点`
+    comparisonNote = `2位 ${runnerUp.name || runnerUp.ticker}との安定スコア差：+${scoreDiff}点`
   } else {
-    comparisonNote = `${runnerUp.name || runnerUp.ticker}とスコアは接近。総合的に${winner.name || winner.ticker}がわずかに有利と判定`
+    comparisonNote = `${runnerUp.name || runnerUp.ticker}と安定スコアは接近。総合的に${winner.name || winner.ticker}がわずかに有利と判定`
   }
 
   return { winner, runnerUp, allDown, reasons: reasons.slice(0, 4), comparisonNote, scoreDiff, allCount: valid.length }
@@ -213,7 +213,9 @@ function CTMetrics({ p }) {
         </div>
       </div>
       {hasRow3 && (
-        <div className="metrics metrics-ext">
+        <div className="entry-timing-section">
+          <div className="entry-timing-label">エントリータイミング（今日エントリーする場合の判断）</div>
+          <div className="metrics metrics-ext">
           {iv !== null && (
             <>
               <div className="metric">
@@ -248,6 +250,7 @@ function CTMetrics({ p }) {
               </strong>
             </div>
           )}
+          </div>
         </div>
       )}
     </>
@@ -339,7 +342,8 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet }) {
       return { ...s, prediction: null }
     }).filter(r => r.prediction !== null)
 
-    live.sort((a, b) => b.prediction.score - a.prediction.score)
+    // 安定スコア（7指標）でソート：2日目確認・初速はエントリー用のため除外
+    live.sort((a, b) => b.prediction.stableScore - a.prediction.stableScore)
     setResults(live)
     setIsAnalyzing(false)
   }
@@ -390,8 +394,8 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet }) {
                       {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
                     </div>
                     <div className="leader-score">
-                      スコア <span className={p.score > 0 ? 'val-up' : 'val-down'}>
-                        {p.score > 0 ? '+' : ''}{p.score}
+                      安定スコア <span className={p.stableScore > 0 ? 'val-up' : 'val-down'}>
+                        {p.stableScore > 0 ? '+' : ''}{p.stableScore}
                       </span>
                     </div>
                     <div className="leader-conf">確信度 {p.confidence}%</div>
@@ -461,12 +465,13 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
       setProgress({ current: newCurrent, total: CT_UNIVERSE.length })
     }
 
-    // CT理論ソート：①UP優先 ②スコア降順 ③規律可能性降順
+    // CT理論ソート：①UP優先 ②安定スコア降順（7指標） ③規律可能性降順
+    // 安定スコアを使うことで2日目確認・初速の日次変動に左右されないランキングを実現
     const sorted = allResults.sort((a, b) => {
       const aUp = a.prediction.direction === 'UP' ? 1 : 0
       const bUp = b.prediction.direction === 'UP' ? 1 : 0
       if (aUp !== bUp) return bUp - aUp
-      if (b.prediction.score !== a.prediction.score) return b.prediction.score - a.prediction.score
+      if (b.prediction.stableScore !== a.prediction.stableScore) return b.prediction.stableScore - a.prediction.stableScore
       return (b.prediction.disciplinaryPct || 0) - (a.prediction.disciplinaryPct || 0)
     })
 
@@ -508,7 +513,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
       {results && (
         <>
           <div className="screener-summary">
-            {scannedCount}銘柄をスキャン完了 — CT総合スコア上位10銘柄
+            {scannedCount}銘柄をスキャン完了 — CT安定スコア上位10銘柄（出来高・OBV・規律可能性・マグネット・停滞・連続日数・ローソク足）
           </div>
           <div className="screener-results">
             {results.map((item, i) => {
@@ -527,7 +532,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
                         {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
                       </span>
                       <span className="screener-score-val">
-                        スコア {p.score > 0 ? '+' : ''}{p.score}
+                        安定スコア {p.stableScore > 0 ? '+' : ''}{p.stableScore}
                       </span>
                       <span className="screener-conf">確信度 {p.confidence}%</span>
                     </div>
@@ -579,6 +584,23 @@ function DetailCard({ item, onClose }) {
         <span className="arrow">{p.direction === 'UP' ? '▲' : '▼'}</span>
         <span className="label">{p.direction === 'UP' ? '上昇傾向' : '下降傾向'}</span>
         <span className="confidence">確信度 {p.confidence}%</span>
+      </div>
+
+      <div className="score-row">
+        <div className="score-block">
+          <span className="score-label">安定スコア</span>
+          <span className={`score-val ${p.stableScore > 0 ? 'val-up' : 'val-down'}`}>
+            {p.stableScore > 0 ? '+' : ''}{p.stableScore}
+          </span>
+          <span className="score-sub">銘柄品質（7指標）</span>
+        </div>
+        <div className="score-block">
+          <span className="score-label">総合スコア</span>
+          <span className={`score-val ${p.score > 0 ? 'val-up' : 'val-down'}`}>
+            {p.score > 0 ? '+' : ''}{p.score}
+          </span>
+          <span className="score-sub">＋エントリータイミング</span>
+        </div>
       </div>
 
       <CTMetrics p={p} />
