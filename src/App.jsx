@@ -4,7 +4,7 @@ import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
 import { getSameIndustryRecommendations, getStockSector } from './utils/industries'
 import { MACRO_CONTEXT, SECTOR_MACRO } from './utils/macroContext'
-import { CT_UNIVERSE, CT_LEADERS, LEADER_RANK_LABEL, LEADER_RANK_CLASS } from './utils/ctUniverse'
+import { CT_UNIVERSE, CT_LEADERS, LEADER_RANK_LABEL, LEADER_RANK_CLASS, SECTOR_BAROMETERS } from './utils/ctUniverse'
 
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位', '6位', '7位', '8位', '9位', '10位']
 const MAX_TICKERS = 10
@@ -318,6 +318,214 @@ function ExitPanel({ p }) {
       </div>
 
       <p className="ct-note">※ 分散エグジットはCT理論のリスク管理手法です。実際の売却判断は相場全体の状況を加味してご自身でご判断ください。</p>
+    </div>
+  )
+}
+
+// ── 次元1：相場環境判断パネル ──────────────────────────────────────────────────
+// CT理論2段階プロセス：業種の強さを確認 → 最強セクターからS-rank先導株を動的選定
+function MarketPhasePanel({ gasUrl, onSelectTicker }) {
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [results, setResults]         = useState(null)
+  const [error, setError]             = useState(null)
+
+  const JP_TOTAL = SECTOR_BAROMETERS.filter(s => s.region === 'JP').length
+
+  const run = async () => {
+    if (!gasUrl) { setError('GAS URLを入力してください。'); return }
+    setIsAnalyzing(true); setError(null); setResults(null)
+
+    const settled = await Promise.allSettled(
+      SECTOR_BAROMETERS.map(s => fetchStockData(s.ticker, { gasUrl, apiKey: '' }))
+    )
+
+    const live = settled.map((r, i) => {
+      const s = SECTOR_BAROMETERS[i]
+      if (r.status === 'fulfilled' && r.value.prices.length >= 20) {
+        return { ...s, name: r.value.name || s.name, prediction: predict(r.value.prices, 14) }
+      }
+      return { ...s, prediction: null }
+    })
+
+    // 米国バロメーター集計
+    const usStocks    = live.filter(s => s.region === 'US')
+    const usWithPred  = usStocks.filter(s => s.prediction)
+    const usUpCount   = usWithPred.filter(s => s.prediction.direction === 'UP').length
+
+    // 日本セクター：安定スコア降順にソート
+    const jpStocks = live.filter(s => s.region === 'JP' && s.prediction)
+    jpStocks.sort((a, b) => b.prediction.stableScore - a.prediction.stableScore)
+
+    const jpTotal   = jpStocks.length
+    const jpUpCount = jpStocks.filter(s => s.prediction.direction === 'UP').length
+
+    // S-rank候補：最強セクターの代表銘柄（上昇かつ安定スコア+2以上が条件）
+    const sRankCandidate = jpStocks.find(s =>
+      s.prediction.direction === 'UP' && s.prediction.stableScore >= 2
+    ) || null
+
+    // 相場フェーズ判定
+    const usStrong = usUpCount >= 2
+    const jpStrong = jpTotal > 0 && jpUpCount >= Math.ceil(jpTotal * 0.5)
+    let overallPhase, overallDesc
+    if (usStrong && jpStrong && sRankCandidate) {
+      overallPhase = 'EASY'
+      overallDesc  = 'トレンド相場：積極的な参加が可能です。先導株の流れに乗ってください。'
+    } else if (!usStrong || (jpTotal > 0 && jpUpCount <= Math.floor(jpTotal * 0.3))) {
+      overallPhase = 'HARD'
+      overallDesc  = 'ランダム相場：相場の8割がこの状態です。現金を保持して待機してください。'
+    } else {
+      overallPhase = 'NORMAL'
+      overallDesc  = '混合相場：一部セクターのみ参加可。スコアの高い先導株を厳選してください。'
+    }
+
+    setResults({ usStocks, jpStocks, usUpCount, usWithPred, jpUpCount, jpTotal, overallPhase, overallDesc, sRankCandidate })
+    setIsAnalyzing(false)
+  }
+
+  return (
+    <div className="card market-phase-panel">
+      <div className="phase-header">
+        <div>
+          <div className="phase-title">次元1：相場環境判断</div>
+          <div className="phase-subtitle">業種選定 → S-rank先導株 → 相場フェーズ判定</div>
+        </div>
+        <button className="btn-phase" onClick={run} disabled={isAnalyzing}>
+          {isAnalyzing ? '分析中...' : results ? '再分析' : '相場環境を分析'}
+        </button>
+      </div>
+
+      {!results && !isAnalyzing && (
+        <div className="phase-intro">
+          <p>
+            CT理論の根本原則：<strong>相場の8割はランダム。2割のトレンド期間のみ参加</strong>。<br />
+            米国3＋日本{JP_TOTAL}セクター代表銘柄をスキャンし、「今日は参加すべき相場か」を判定します。
+          </p>
+        </div>
+      )}
+
+      {error && <div className="nikkei-error">{error}</div>}
+
+      {isAnalyzing && (
+        <div className="phase-loading">{SECTOR_BAROMETERS.length}銘柄（米国3＋日本{JP_TOTAL}セクター）をスキャン中...</div>
+      )}
+
+      {results && (
+        <>
+          {/* 総合相場フェーズ */}
+          <div className={`phase-overall phase-overall-${results.overallPhase.toLowerCase()}`}>
+            <div className="phase-overall-label">相場環境</div>
+            <div className="phase-overall-phase">
+              {results.overallPhase === 'EASY' ? 'EASY相場'
+                : results.overallPhase === 'HARD' ? 'HARD相場'
+                : 'NORMAL相場'}
+            </div>
+            <p className="phase-overall-desc">{results.overallDesc}</p>
+            <div className="phase-overall-stats">
+              米国 {results.usUpCount}/{results.usWithPred.length} UP　／
+              日本セクター {results.jpUpCount}/{results.jpTotal} UP
+            </div>
+          </div>
+
+          {/* Step1: 米国バロメーター */}
+          <div className="phase-section-title">
+            Step1 — 米国市場バロメーター
+          </div>
+          <div className="phase-us-grid">
+            {results.usStocks.map(s => {
+              const p = s.prediction
+              if (!p) return (
+                <div key={s.ticker} className="phase-us-card phase-card-neutral">
+                  <div className="phase-card-ticker">{s.ticker}</div>
+                  <div className="phase-card-name">{s.name}</div>
+                  <div className="phase-card-status">データなし</div>
+                </div>
+              )
+              return (
+                <div key={s.ticker} className={`phase-us-card ${p.direction === 'UP' ? 'phase-card-up' : 'phase-card-down'}`}>
+                  <div className="phase-card-ticker">{s.ticker}</div>
+                  <div className="phase-card-name">{s.name}</div>
+                  <div className={`phase-card-dir ${p.direction === 'UP' ? 'val-up' : 'val-down'}`}>
+                    {p.direction === 'UP' ? '▲ UP' : '▼ DOWN'}
+                  </div>
+                  <div className="phase-card-score">
+                    安定 {p.stableScore > 0 ? '+' : ''}{p.stableScore}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Step2: 日本セクターランキング */}
+          <div className="phase-section-title">
+            Step2 — 日本セクター強さランキング
+            <span className="phase-section-sub">（安定スコア順）</span>
+          </div>
+          <div className="phase-jp-list">
+            {results.jpStocks.map((s, i) => {
+              const p = s.prediction
+              const isStrong = i < 3 && p.direction === 'UP' && p.stableScore >= 2
+              return (
+                <div key={s.ticker} className={`phase-jp-item ${isStrong ? 'phase-jp-strong' : ''} ${p.direction === 'UP' ? 'phase-jp-up' : 'phase-jp-down'}`}>
+                  <div className={`phase-jp-rank ${i === 0 ? 'phase-jp-rank-gold' : i === 1 ? 'phase-jp-rank-silver' : i === 2 ? 'phase-jp-rank-bronze' : ''}`}>
+                    {i + 1}
+                  </div>
+                  <div className="phase-jp-info">
+                    <div className="phase-jp-sector">{s.sector}</div>
+                    <div className="phase-jp-ticker-name">
+                      <span className="phase-jp-ticker">{s.ticker}</span>
+                      <span className="phase-jp-name">{s.name}</span>
+                    </div>
+                  </div>
+                  <div className={`phase-jp-scores ${p.direction === 'UP' ? 'phase-jp-up-color' : 'phase-jp-down-color'}`}>
+                    <span className="phase-jp-arrow">{p.direction === 'UP' ? '▲' : '▼'}</span>
+                    <span className="phase-jp-score-val">{p.stableScore > 0 ? '+' : ''}{p.stableScore}</span>
+                  </div>
+                  {isStrong && <div className="phase-jp-star">強</div>}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Step3: S-rank先導株候補 */}
+          <div className="phase-section-title">
+            Step3 — 本日のS-rank先導株候補
+            <span className="phase-section-sub">（最強セクターからCT理論が動的選定）</span>
+          </div>
+          {results.sRankCandidate ? (
+            <div className="phase-srank-card">
+              <div className="phase-srank-left">
+                <div className="phase-srank-badge">S-rank</div>
+                <div className="phase-srank-sector">{results.sRankCandidate.sector}</div>
+                <div className="phase-srank-name">{results.sRankCandidate.name}</div>
+                <div className="phase-srank-ticker">{results.sRankCandidate.ticker}</div>
+              </div>
+              <div className="phase-srank-center">
+                <div className="phase-srank-dir val-up">▲ 上昇トレンド</div>
+                <div className="phase-srank-score">
+                  安定スコア <strong className="val-up">+{results.sRankCandidate.prediction.stableScore}</strong>
+                </div>
+                <div className="phase-srank-conf">確信度 {results.sRankCandidate.prediction.confidence}%</div>
+                <IndicatorBadges p={results.sRankCandidate.prediction} />
+              </div>
+              <button
+                className="btn-select-ticker"
+                onClick={() => onSelectTicker(results.sRankCandidate.ticker)}
+              >
+                詳細分析 →
+              </button>
+            </div>
+          ) : (
+            <div className="phase-srank-none">
+              現在S-rank条件（上昇トレンド＋安定スコア+2以上）を満たすセクター代表銘柄がありません。HARD相場の可能性が高く、待機を推奨します。
+            </div>
+          )}
+
+          <p className="disclaimer" style={{ marginTop: 12 }}>
+            ※ 相場環境判断はCT理論に基づく参考情報です。投資判断の最終責任はご自身にあります。
+          </p>
+        </>
+      )}
     </div>
   )
 }
@@ -954,6 +1162,12 @@ export default function App() {
       </form>
 
       {error && <div className="error">{error}</div>}
+
+      {/* ── 次元1：相場環境判断パネル ── */}
+      <MarketPhasePanel
+        gasUrl={gasUrl.trim()}
+        onSelectTicker={handleSelectTicker}
+      />
 
       {/* ── 先導株パネル ── */}
       <LeaderPanel

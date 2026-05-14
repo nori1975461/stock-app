@@ -187,6 +187,36 @@ export const CT_LEADERS = [
   },
 ]
 
+// ── 次元1：セクターバロメーター（業種代表銘柄）────────────────────────────────
+//
+// 相場環境判断の2段階プロセス：
+//   Step1: 各業種の代表銘柄をスキャンして「強いセクター」を選定
+//   Step2: 強いセクターの中から最もCTスコアが高い銘柄をS-rank候補とする
+//
+// 選定基準（日本株）：
+//   - 業種内で時価総額最大 + 出来高安定 + 複数顧客（単一顧客依存リスクを排除）
+//   - アドバンテスト除外理由：ボラティリティが大きく業種バロメーターには不適
+export const SECTOR_BAROMETERS = [
+  // 米国バロメーター（市場全体・ハイテク・半導体の3軸）
+  { ticker: 'SPY',    name: 'S&P500 ETF',        sector: '米国市場全体',     region: 'US' },
+  { ticker: 'QQQ',    name: 'NASDAQ-100 ETF',     sector: '米国ハイテク',     region: 'US' },
+  { ticker: 'SOXX',   name: '半導体ETF',           sector: '米国半導体',      region: 'US' },
+  // 日本セクター代表（各業種1銘柄：最安定・最流動性の代表を選定）
+  { ticker: '8035.T', name: '東京エレクトロン',    sector: '電子部品・半導体', region: 'JP' },
+  { ticker: '6501.T', name: '日立製作所',           sector: '電気機器',        region: 'JP' },
+  { ticker: '6098.T', name: 'リクルートHD',         sector: 'IT・情報サービス', region: 'JP' },
+  { ticker: '7741.T', name: 'HOYA',                sector: '精密機器',         region: 'JP' },
+  { ticker: '6273.T', name: 'SMC',                 sector: '機械',             region: 'JP' },
+  { ticker: '7011.T', name: '三菱重工業',           sector: '重工業',           region: 'JP' },
+  { ticker: '4063.T', name: '信越化学工業',          sector: '化学',             region: 'JP' },
+  { ticker: '8001.T', name: '伊藤忠商事',            sector: '総合商社',         region: 'JP' },
+  { ticker: '8306.T', name: '三菱UFJ FG',           sector: '銀行',             region: 'JP' },
+  { ticker: '9433.T', name: 'KDDI',                 sector: '通信',             region: 'JP' },
+  { ticker: '5803.T', name: 'フジクラ',              sector: '非鉄金属',         region: 'JP' },
+  { ticker: '7974.T', name: '任天堂',                sector: 'エンタメ・ゲーム',  region: 'JP' },
+  { ticker: '4519.T', name: '中外製薬',              sector: '医薬品',            region: 'JP' },
+]
+
 // 先導ランクの表示ラベル
 export const LEADER_RANK_LABEL = {
   S: '★★★ 確定先導株',

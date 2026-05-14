@@ -1754,3 +1754,420 @@ h1 {
   background: rgba(255,252,245,0.7);
   padding: 10px 12px;
 }
+
+/* ─── 次元1：相場環境判断パネル ─────────────────────────────────────────── */
+.market-phase-panel {
+  border-color: #2a5cb0;
+  background: linear-gradient(160deg, #f5f8ff 0%, #e8eeff 100%);
+}
+
+.phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.phase-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1a3070;
+  letter-spacing: 0.04em;
+}
+
+.phase-subtitle {
+  font-size: 0.78rem;
+  color: #4060a8;
+  margin-top: 2px;
+}
+
+.btn-phase {
+  padding: 9px 18px;
+  background: linear-gradient(180deg, #2a60c8 0%, #1a4090 100%);
+  color: #e8f0ff;
+  border: 1.5px solid #4a80e0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 3px 14px rgba(42,96,200,0.35);
+  transition: all 0.15s;
+}
+
+.btn-phase:hover:not(:disabled) {
+  background: linear-gradient(180deg, #3070d8 0%, #2050a8 100%);
+  box-shadow: 0 4px 20px rgba(42,96,200,0.5);
+  transform: translateY(-1px);
+}
+
+.btn-phase:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.phase-intro {
+  background: rgba(42,92,176,0.07);
+  border: 1px solid rgba(42,92,176,0.18);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  color: #2a3860;
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.phase-intro strong { color: #1a3080; }
+
+.phase-loading {
+  text-align: center;
+  padding: 20px;
+  color: #4060a8;
+  font-size: 0.88rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 総合フェーズバッジ */
+.phase-overall {
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 12px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.phase-overall-easy {
+  background: linear-gradient(135deg, #1a5c30, #2a8040);
+  border: 1.5px solid #50c070;
+  box-shadow: 0 4px 18px rgba(40,160,80,0.25);
+}
+
+.phase-overall-normal {
+  background: linear-gradient(135deg, #1a3a7a, #2a50a8);
+  border: 1.5px solid #5080d8;
+  box-shadow: 0 4px 18px rgba(42,96,200,0.25);
+}
+
+.phase-overall-hard {
+  background: linear-gradient(135deg, #5a1a10, #902818);
+  border: 1.5px solid #d04030;
+  box-shadow: 0 4px 18px rgba(192,64,48,0.3);
+}
+
+.phase-overall-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phase-overall-phase {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.06em;
+}
+
+.phase-overall-desc {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.5;
+}
+
+.phase-overall-stats {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.65);
+  margin-top: 2px;
+}
+
+/* セクションタイトル */
+.phase-section-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #1a3070;
+  letter-spacing: 0.06em;
+  margin: 14px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid rgba(42,92,176,0.2);
+}
+
+.phase-section-sub {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #6080b8;
+  margin-left: 8px;
+}
+
+/* 米国バロメーターグリッド */
+.phase-us-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.phase-us-card {
+  border-radius: 8px;
+  padding: 11px 10px;
+  text-align: center;
+  border: 1.5px solid rgba(42,92,176,0.25);
+  background: rgba(255,255,255,0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.phase-card-up {
+  border-color: rgba(40,160,80,0.4);
+  background: rgba(220,255,235,0.5);
+}
+
+.phase-card-down {
+  border-color: rgba(192,64,48,0.35);
+  background: rgba(255,230,225,0.5);
+}
+
+.phase-card-neutral {
+  background: rgba(220,220,225,0.4);
+}
+
+.phase-card-ticker {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1a3070;
+}
+
+.phase-card-name {
+  font-size: 0.68rem;
+  color: #556080;
+}
+
+.phase-card-dir {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.phase-card-score {
+  font-size: 0.72rem;
+  color: #556080;
+}
+
+.phase-card-status {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 6px;
+}
+
+/* 日本セクターリスト */
+.phase-jp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.phase-jp-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(42,92,176,0.15);
+  background: rgba(255,255,255,0.45);
+  transition: box-shadow 0.15s;
+}
+
+.phase-jp-item:hover {
+  box-shadow: 0 2px 10px rgba(42,92,176,0.12);
+}
+
+.phase-jp-up {
+  border-color: rgba(40,160,80,0.25);
+}
+
+.phase-jp-down {
+  border-color: rgba(192,64,48,0.2);
+  background: rgba(255,245,243,0.45);
+}
+
+.phase-jp-strong {
+  background: rgba(210,240,220,0.55) !important;
+  border-color: rgba(40,160,80,0.45) !important;
+  box-shadow: 0 1px 6px rgba(40,160,80,0.12);
+}
+
+.phase-jp-rank {
+  font-size: 0.78rem;
+  font-weight: 800;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+  color: #6080a0;
+}
+
+.phase-jp-rank-gold   { color: #c09010 !important; }
+.phase-jp-rank-silver { color: #809090 !important; }
+.phase-jp-rank-bronze { color: #a06030 !important; }
+
+.phase-jp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.phase-jp-sector {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2a4070;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phase-jp-ticker-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+}
+
+.phase-jp-ticker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4060a8;
+}
+
+.phase-jp-name {
+  font-size: 0.68rem;
+  color: #6080a0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phase-jp-scores {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.phase-jp-up-color   { color: #2a9050; }
+.phase-jp-down-color { color: #c04030; }
+
+.phase-jp-arrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.phase-jp-score-val {
+  font-size: 0.88rem;
+  font-weight: 800;
+  min-width: 26px;
+  text-align: right;
+}
+
+.phase-jp-star {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(40,160,80,0.2);
+  border: 1px solid rgba(40,160,80,0.4);
+  color: #1a7040;
+  flex-shrink: 0;
+}
+
+/* S-rank先導株候補 */
+.phase-srank-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 2px solid rgba(42,92,176,0.45);
+  background: linear-gradient(135deg, rgba(220,235,255,0.7), rgba(200,220,255,0.5));
+  box-shadow: 0 4px 18px rgba(42,92,176,0.15);
+  margin-bottom: 4px;
+}
+
+.phase-srank-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 90px;
+}
+
+.phase-srank-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #1a3a8b, #2a5cc0);
+  color: #c0d8ff;
+  border: 1px solid #4070d4;
+  display: inline-block;
+  letter-spacing: 0.08em;
+  align-self: flex-start;
+}
+
+.phase-srank-sector {
+  font-size: 0.7rem;
+  color: #2a4080;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.phase-srank-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a3070;
+}
+
+.phase-srank-ticker {
+  font-size: 0.75rem;
+  color: #4060a8;
+  font-weight: 600;
+}
+
+.phase-srank-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.phase-srank-dir {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.phase-srank-score {
+  font-size: 0.82rem;
+  color: #4060a8;
+}
+
+.phase-srank-conf {
+  font-size: 0.78rem;
+  color: #6080b0;
+}
+
+.phase-srank-none {
+  font-size: 0.84rem;
+  color: #804020;
+  background: rgba(255,230,215,0.6);
+  border: 1px solid rgba(192,100,50,0.3);
+  border-radius: 8px;
+  padding: 12px 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .phase-us-grid { grid-template-columns: repeat(3, 1fr); }
+  .phase-srank-card { flex-wrap: wrap; }
+}
