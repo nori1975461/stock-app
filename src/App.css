@@ -2743,59 +2743,67 @@ h1 {
 
 /* ─── CT推奨上位2銘柄 ──────────────────────────────────────── */
 .top-reco-panel {
-  background: linear-gradient(135deg, rgba(139,105,20,0.10) 0%, rgba(100,70,10,0.06) 100%);
-  border: 1.5px solid rgba(180,140,50,0.38);
-  border-radius: 10px;
-  padding: 12px 14px;
-  margin: 12px 0 8px;
+  background: linear-gradient(145deg, #231e14 0%, #181208 100%);
+  border: 1.5px solid rgba(212,168,44,0.48);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 14px 0 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .top-reco-title {
-  font-size: 0.76rem;
+  font-size: 0.70rem;
   font-weight: 700;
-  color: #8b6914;
-  letter-spacing: 0.04em;
-  margin-bottom: 8px;
+  color: rgba(212,168,44,0.82);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
 }
-.top-reco-list { display: flex; flex-direction: column; gap: 6px; }
+.top-reco-list { display: flex; flex-direction: column; gap: 7px; }
 .top-reco-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(255,255,255,0.52);
+  gap: 12px;
+  background: rgba(255,255,255,0.04);
   border-radius: 8px;
-  padding: 8px 10px;
-  border: 1px solid rgba(180,140,50,0.18);
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.07);
 }
 .top-reco-first {
-  border-color: rgba(180,140,50,0.42);
-  background: rgba(255,248,215,0.65);
+  background: rgba(212,168,44,0.10);
+  border-color: rgba(212,168,44,0.32);
 }
 .top-reco-rank {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  color: #7a5200;
-  min-width: 24px;
+  color: rgba(212,168,44,0.72);
+  min-width: 22px;
   text-align: center;
+  letter-spacing: 0.02em;
 }
 .top-reco-info { flex: 1; min-width: 0; }
-.top-reco-ticker { font-size: 0.88rem; font-weight: 800; color: #111; }
+.top-reco-ticker {
+  font-size: 0.90rem;
+  font-weight: 800;
+  color: #f0e8d8;
+  letter-spacing: 0.02em;
+}
 .top-reco-name {
   font-size: 0.70rem;
-  color: #555;
+  color: rgba(240,232,216,0.52);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 .top-reco-scores {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 1px;
+  gap: 2px;
   min-width: 52px;
 }
-.top-reco-score { font-size: 0.78rem; font-weight: 700; color: #333; }
-.top-reco-conf  { font-size: 0.68rem; color: #777; }
+.top-reco-score { font-size: 0.78rem; font-weight: 700; color: rgba(240,232,216,0.82); }
+.top-reco-conf  { font-size: 0.68rem; color: rgba(240,232,216,0.42); }
 .top-reco-btns  { display: flex; flex-direction: column; gap: 4px; }
 
 /* ─── エントリー判断バッジ ─────────────────────────────────── */
