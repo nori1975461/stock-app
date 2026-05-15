@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
@@ -665,18 +665,44 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
 }
 
 // ── CTスクリーニングパネル ──────────────────────────────────────────────────
+const SCREENER_CACHE_KEY    = 'ct_screener_cache'
+const SCREENER_CACHE_EXPIRE = 8 * 60 * 60 * 1000  // 8時間
+const ACTIVE_MIN_STABLE     = 1                    // アクティブ候補の安定スコア閾値
+
 function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
+  const BATCH = 8
+
+  const loadCache = () => {
+    try {
+      const raw = localStorage.getItem(SCREENER_CACHE_KEY)
+      if (!raw) return null
+      const c = JSON.parse(raw)
+      if (Date.now() - c.timestamp > SCREENER_CACHE_EXPIRE) return null
+      return c
+    } catch { return null }
+  }
+
+  const initCache = loadCache()
+
   const [isScanning, setIsScanning]   = useState(false)
   const [progress, setProgress]       = useState({ current: 0, total: 0 })
-  const [results, setResults]         = useState(null)
+  const [results, setResults]         = useState(initCache?.results   || null)
+  const [sectorTops, setSectorTops]   = useState(initCache?.sectorTops || null)
+  const [scannedCount, setScannedCount] = useState(initCache?.scannedCount || 0)
+  const [cachedAt, setCachedAt]       = useState(initCache?.timestamp  || null)
   const [error, setError]             = useState(null)
-  const [scannedCount, setScannedCount] = useState(0)
 
-  const BATCH = 8
+  const formatAge = (ts) => {
+    const m = Math.floor((Date.now() - ts) / 60000)
+    if (m < 60)  return `${m}分前`
+    const h = Math.floor(m / 60)
+    if (h < 24)  return `${h}時間前`
+    return `${Math.floor(h / 24)}日前`
+  }
 
   const run = async () => {
     if (!gasUrl) { setError('GAS URLを入力してください。'); return }
-    setIsScanning(true); setError(null); setResults(null)
+    setIsScanning(true); setError(null); setResults(null); setSectorTops(null)
     setProgress({ current: 0, total: CT_UNIVERSE.length })
 
     const allResults = []
@@ -697,13 +723,11 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
           })
         }
       })
-      const newCurrent = Math.min(i + BATCH, CT_UNIVERSE.length)
-      setProgress({ current: newCurrent, total: CT_UNIVERSE.length })
+      setProgress({ current: Math.min(i + BATCH, CT_UNIVERSE.length), total: CT_UNIVERSE.length })
     }
 
-    // CT理論ソート：①UP優先 ②安定スコア降順（7指標） ③規律可能性降順
-    // 安定スコアを使うことで2日目確認・初速の日次変動に左右されないランキングを実現
-    const sorted = allResults.sort((a, b) => {
+    // CT理論ソート：①UP優先 ②安定スコア降順 ③規律可能性降順
+    const sorted = [...allResults].sort((a, b) => {
       const aUp = a.prediction.direction === 'UP' ? 1 : 0
       const bUp = b.prediction.direction === 'UP' ? 1 : 0
       if (aUp !== bUp) return bUp - aUp
@@ -711,13 +735,53 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
       return (b.prediction.disciplinaryPct || 0) - (a.prediction.disciplinaryPct || 0)
     })
 
+    // セクター別トップ1（ソート済みの先頭 = 各セクター最高スコア）
+    const sectorSeen = new Set()
+    const sectorTopList = []
+    for (const item of sorted) {
+      if (!sectorSeen.has(item.sector)) {
+        sectorSeen.add(item.sector)
+        sectorTopList.push({
+          ticker:      item.ticker,
+          name:        item.name,
+          sector:      item.sector,
+          direction:   item.prediction.direction,
+          stableScore: item.prediction.stableScore,
+          confidence:  item.prediction.confidence,
+        })
+      }
+    }
+
+    const top10 = sorted.slice(0, 10)
+    const now   = Date.now()
+
+    // キャッシュ保存（chartDataを除いてサイズ削減）
+    try {
+      localStorage.setItem(SCREENER_CACHE_KEY, JSON.stringify({
+        timestamp:    now,
+        scannedCount: allResults.length,
+        sectorTops:   sectorTopList,
+        results:      top10.map(item => ({
+          ...item,
+          prediction: { ...item.prediction, chartData: null },
+        })),
+      }))
+    } catch {}
+
+    setResults(top10)
+    setSectorTops(sectorTopList)
     setScannedCount(allResults.length)
-    setResults(sorted.slice(0, 10))
+    setCachedAt(now)
     setIsScanning(false)
   }
 
-  const pct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
+  const pct        = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
   const topTickers = results ? results.map(r => r.ticker).join(',') : ''
+
+  // 閾値ライン：最初にアクティブ条件を満たさないインデックス
+  const thresholdIdx = results
+    ? results.findIndex(item => !(item.prediction.direction === 'UP' && item.prediction.stableScore >= ACTIVE_MIN_STABLE))
+    : -1
 
   return (
     <div className="card screener-panel">
@@ -729,9 +793,17 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
           </div>
         </div>
         <button className="btn-screener" onClick={run} disabled={isScanning}>
-          {isScanning ? 'スキャン中...' : '上位10銘柄を探す'}
+          {isScanning ? 'スキャン中...' : results ? '再スキャン' : '上位10銘柄を探す'}
         </button>
       </div>
+
+      {/* キャッシュ鮮度表示 */}
+      {cachedAt && !isScanning && (
+        <div className="screener-cache-info">
+          <span>🕐 {formatAge(cachedAt)}のスキャン結果を表示中</span>
+          <span className="screener-cache-hint">（8時間で自動失効 ／ 「再スキャン」で最新化）</span>
+        </div>
+      )}
 
       {error && <div className="nikkei-error">{error}</div>}
 
@@ -749,57 +821,107 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
       {results && (
         <>
           <div className="screener-summary">
-            {scannedCount}銘柄をスキャン完了 — CT安定スコア上位10銘柄（出来高・OBV・規律可能性・マグネット・停滞・連続日数・ローソク足）
+            {scannedCount}銘柄スキャン完了 —
+            {thresholdIdx < 0
+              ? ` 全${results.length}銘柄がアクティブ候補（UP＋安定スコア+${ACTIVE_MIN_STABLE}以上）`
+              : thresholdIdx === 0
+                ? ` アクティブ候補なし（HARD相場の可能性）`
+                : ` アクティブ候補 ${thresholdIdx}銘柄 ／ 監視 ${results.length - thresholdIdx}銘柄`
+            }
           </div>
+
+          {thresholdIdx === 0 && (
+            <div className="screener-threshold-warn">
+              ⚠ UP＋安定スコア+{ACTIVE_MIN_STABLE}以上を満たす銘柄がトップ10にありません。次元1で相場環境を確認してください。
+            </div>
+          )}
+
           <div className="screener-results">
             {results.map((item, i) => {
-              const p = item.prediction
+              const p        = item.prediction
+              const isActive = p.direction === 'UP' && p.stableScore >= ACTIVE_MIN_STABLE
               return (
-                <div key={item.ticker} className={`screener-item ${i === 0 ? 'screener-item-top' : ''}`}>
-                  <div className="screener-rank">{RANK_LABELS[i]}</div>
-                  <div className="screener-body">
-                    <div className="screener-name-row">
-                      <span className="screener-ticker">{item.ticker}</span>
-                      <span className="screener-name">{item.name}</span>
-                      <span className="screener-sector">{item.sector}</span>
+                <Fragment key={item.ticker}>
+                  {thresholdIdx > 0 && i === thresholdIdx && (
+                    <div className="screener-threshold-line">
+                      ── アクティブ候補ライン（以下は監視のみ・エントリー不推奨） ──
                     </div>
-                    <div className="screener-score-row">
-                      <span className={`screener-dir ${p.direction === 'UP' ? 'up' : 'down'}`}>
-                        {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
-                      </span>
-                      <span className="screener-score-val">
-                        安定スコア {p.stableScore > 0 ? '+' : ''}{p.stableScore}
-                      </span>
-                      <span className="screener-conf">確信度 {p.confidence}%</span>
+                  )}
+                  <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''}`}>
+                    <div className="screener-rank">{RANK_LABELS[i]}</div>
+                    <div className="screener-body">
+                      <div className="screener-name-row">
+                        <span className="screener-ticker">{item.ticker}</span>
+                        <span className="screener-name">{item.name}</span>
+                        <span className="screener-sector">{item.sector}</span>
+                        {!isActive && <span className="screener-watch-badge">監視</span>}
+                      </div>
+                      <div className="screener-score-row">
+                        <span className={`screener-dir ${p.direction === 'UP' ? 'up' : 'down'}`}>
+                          {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
+                        </span>
+                        <span className="screener-score-val">
+                          安定スコア {p.stableScore > 0 ? '+' : ''}{p.stableScore}
+                        </span>
+                        <span className="screener-conf">確信度 {p.confidence}%</span>
+                      </div>
+                      <IndicatorBadges p={p} />
+                      {p.signals && (
+                        <div className="screener-signals">
+                          {p.signals.slice(0, 2).map((s, si) => (
+                            <div key={si} className="screener-signal-line">・{s}</div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <IndicatorBadges p={p} />
-                    <div className="screener-signals">
-                      {p.signals.slice(0, 2).map((s, si) => (
-                        <div key={si} className="screener-signal-line">・{s}</div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="screener-item-btns">
-                    <button
-                      className="btn-select-ticker"
-                      onClick={() => onSelectTicker(item.ticker)}
-                    >
-                      詳細 →
-                    </button>
-                    {onRecordTrade && (
-                      <button
-                        className="btn-tj-record"
-                        title="購入を記録"
-                        onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
-                      >
-                        📝
+                    <div className="screener-item-btns">
+                      <button className="btn-select-ticker" onClick={() => onSelectTicker(item.ticker)}>
+                        詳細 →
                       </button>
-                    )}
+                      {onRecordTrade && (
+                        <button
+                          className="btn-tj-record"
+                          title="購入を記録"
+                          onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
+                        >
+                          📝
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </Fragment>
               )
             })}
           </div>
+
+          {/* セクター別トップ1 */}
+          {sectorTops && sectorTops.length > 0 && (
+            <details className="screener-sector-tops">
+              <summary className="screener-sector-tops-title">
+                セクター別トップ1（{sectorTops.length}セクター ／ クリックで展開）
+              </summary>
+              <div className="screener-sector-grid">
+                {sectorTops.map(s => (
+                  <div
+                    key={s.ticker}
+                    className={`screener-sector-item ${s.direction === 'UP' ? 'sector-item-up' : 'sector-item-down'} ${s.direction === 'UP' && s.stableScore >= ACTIVE_MIN_STABLE ? 'sector-item-active' : ''}`}
+                    onClick={() => onSelectTicker(s.ticker)}
+                  >
+                    <div className="sector-item-sector">{s.sector}</div>
+                    <div className="sector-item-ticker">{s.ticker}</div>
+                    <div className="sector-item-name">{s.name}</div>
+                    <div className={`sector-item-score ${s.direction === 'UP' ? 'val-up' : 'val-down'}`}>
+                      {s.direction === 'UP' ? '▲' : '▼'} {s.stableScore > 0 ? '+' : ''}{s.stableScore}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="disclaimer" style={{ marginTop: 8, fontSize: '0.72rem' }}>
+                ※ 各セクターの安定スコア最高銘柄。クリックでフォームに入力されます。
+              </p>
+            </details>
+          )}
+
           {topTickers && (
             <button className="btn-select-set" onClick={() => onSelectSet(topTickers)}>
               ▶ この10銘柄を比較分析する（フォームに入力）
@@ -809,6 +931,12 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
             ※ スキャン結果はCT理論スコアの瞬間値です。投資判断の最終責任はご自身にあります。
           </p>
         </>
+      )}
+
+      {!results && !isScanning && (
+        <div className="screener-empty-hint">
+          「上位10銘柄を探す」を押してスキャンを開始してください。結果は8時間キャッシュされます。
+        </div>
       )}
     </div>
   )

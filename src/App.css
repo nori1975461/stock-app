@@ -1512,6 +1512,133 @@ h1 {
   .screener-signals { padding-left: 14px; }
 }
 
+/* ── スクリーナー追加スタイル ──────────────────────────────────────── */
+
+/* キャッシュ鮮度バー */
+.screener-cache-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #5fe08a;
+  background: rgba(95,224,138,0.06);
+  border: 1px solid rgba(95,224,138,0.2);
+  border-radius: 6px;
+  padding: 5px 10px;
+  margin-bottom: 8px;
+}
+.screener-cache-hint { color: #50b070; font-size: 0.7rem; }
+
+/* 閾値ライン */
+.screener-threshold-line {
+  text-align: center;
+  font-size: 0.72rem;
+  color: #80a090;
+  padding: 6px 0;
+  border-top: 1px dashed rgba(95,224,138,0.25);
+  border-bottom: 1px dashed rgba(95,224,138,0.25);
+  margin: 4px 0;
+  letter-spacing: 0.03em;
+}
+.screener-threshold-warn {
+  font-size: 0.8rem;
+  color: #ffc060;
+  background: rgba(255,192,96,0.08);
+  border: 1px solid rgba(255,192,96,0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+/* 監視バッジ・監視アイテム */
+.screener-watch-badge {
+  font-size: 0.62rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(120,120,140,0.18);
+  border: 1px solid rgba(120,120,140,0.3);
+  color: #9090a8;
+  font-weight: 600;
+}
+.screener-item-watch {
+  opacity: 0.65;
+}
+.screener-item-watch .screener-score-val { color: #9090a8; }
+
+/* 起動前の空状態 */
+.screener-empty-hint {
+  font-size: 0.84rem;
+  color: #50b070;
+  text-align: center;
+  padding: 20px;
+}
+
+/* セクター別トップ1 */
+.screener-sector-tops {
+  margin: 12px 0 8px;
+  border: 1px solid rgba(95,224,138,0.2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.screener-sector-tops-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5fe08a;
+  padding: 8px 12px;
+  background: rgba(95,224,138,0.06);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.screener-sector-tops-title::-webkit-details-marker { display: none; }
+.screener-sector-tops[open] .screener-sector-tops-title::before { content: '▼ '; font-size: 0.65rem; }
+.screener-sector-tops:not([open]) .screener-sector-tops-title::before { content: '▶ '; font-size: 0.65rem; }
+
+.screener-sector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  padding: 10px;
+  background: rgba(0,0,0,0.15);
+}
+.screener-sector-item {
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.screener-sector-item:hover { opacity: 0.8; }
+.sector-item-up   { background: rgba(95,224,138,0.08); border-color: rgba(95,224,138,0.25); }
+.sector-item-down { background: rgba(255,128,128,0.06); border-color: rgba(255,128,128,0.2); opacity: 0.6; }
+.sector-item-active { border-color: rgba(95,224,138,0.5); }
+
+.sector-item-sector {
+  font-size: 0.62rem;
+  color: #80a090;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sector-item-ticker {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #d0f0e0;
+}
+.sector-item-name {
+  font-size: 0.68rem;
+  color: #90b0a0;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sector-item-score {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 /* ─── 分散エグジット判断パネル ──────────────────────────────── */
 .exit-panel {
   margin-bottom: 16px;

@@ -88,6 +88,21 @@ export const CT_UNIVERSE = [
   { ticker: '4519.T', name: '中外製薬',                sector: '医薬品' },
   { ticker: '4568.T', name: '第一三共',                sector: '医薬品' },
 
+  // ━━ データセンター・AIインフラ（電力・冷却・建設）━━━━━━━━━━━━━━━━━━━━━━
+  { ticker: '9531.T', name: '東京ガス',                sector: 'データセンター・電力' },
+  { ticker: '9503.T', name: '関西電力',                sector: 'データセンター・電力' },
+  { ticker: '6503.T', name: '三菱電機',                sector: 'データセンター・電力' },
+  { ticker: '6302.T', name: '住友重機械工業',          sector: 'データセンター・電力' },
+  { ticker: '1801.T', name: '大成建設',                sector: 'データセンター・建設' },
+  { ticker: '1803.T', name: '清水建設',                sector: 'データセンター・建設' },
+
+  // ━━ 自動車（EV・自動運転・次世代モビリティ）━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { ticker: '7203.T', name: 'トヨタ自動車',            sector: '自動車' },
+  { ticker: '7267.T', name: 'ホンダ',                  sector: '自動車' },
+
+  // ━━ 不動産（金利感応・相場転換の先行指標）━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { ticker: '8802.T', name: '三菱地所',                sector: '不動産' },
+
   // ━━ 米国株（CT先導株・2024-2026年の市場牽引銘柄）━━━━━━━━━━━━━━━━━━━━━
   { ticker: 'NVDA',   name: 'NVIDIA',                  sector: '米国半導体' },
   { ticker: 'AMD',    name: 'AMD',                     sector: '米国半導体' },
