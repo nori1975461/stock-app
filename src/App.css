@@ -2859,3 +2859,91 @@ h1 {
 .ej-forbid { background: linear-gradient(135deg, #fce4ec 0%, #fef0f4 100%); border-color: #b71c1c; color: #b71c1c; }
 .ej-forbid .ej-badge-label { color: #b71c1c; }
 .ej-badge-compact.ej-forbid { background: #ffcdd2; border-color: #b71c1c; color: #b71c1c; }
+
+/* ─── LeaderPanel アクティブフィルタ ─────────── */
+.leader-active-count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.leader-count-active {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2e7d32;
+  background: rgba(46,125,50,0.10);
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(46,125,50,0.28);
+}
+
+.leader-count-zero {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b71c1c;
+  background: rgba(183,28,28,0.09);
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(183,28,28,0.25);
+}
+
+.leader-count-hint {
+  font-size: 0.75rem;
+  color: #777;
+  font-style: italic;
+}
+
+.leader-none-active {
+  background: rgba(183,28,28,0.06);
+  border: 1.5px solid rgba(183,28,28,0.22);
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.leader-none-active p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.leader-item-dormant {
+  opacity: 0.52;
+  filter: grayscale(0.4);
+}
+
+.leader-dormant-section {
+  margin-top: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.leader-dormant-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #777;
+  cursor: pointer;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 8px;
+  list-style: none;
+  border: 1px solid rgba(0,0,0,0.10);
+  user-select: none;
+}
+
+.leader-dormant-title::-webkit-details-marker { display: none; }
+.leader-dormant-title::before { content: '▶ '; font-size: 0.7rem; }
+details[open] .leader-dormant-title::before { content: '▼ '; }
+
+.leader-dormant-note {
+  font-size: 0.75rem;
+  color: #888;
+  font-style: italic;
+  padding: 8px 12px 4px;
+}
+
+.leader-results-dormant {
+  opacity: 0.75;
+}

@@ -584,7 +584,62 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
     setIsAnalyzing(false)
   }
 
-  const topTickers = results ? results.map(r => r.ticker).join(',') : ''
+  // アクティブ先導株：UP + 安定スコア+2以上 + 分散シグナルなし（HOLD）のみ
+  const LEADER_ACTIVE_MIN_STABLE = 2
+  const activeResults  = results ? results.filter(r => {
+    const p = r.prediction
+    return p.direction === 'UP'
+      && p.stableScore >= LEADER_ACTIVE_MIN_STABLE
+      && (p.exitJudgment?.exitLevel ?? 0) === 0
+  }) : []
+  const dormantResults = results ? results.filter(r => !activeResults.includes(r)) : []
+
+  const topTickers = activeResults.length > 0 ? activeResults.map(r => r.ticker).join(',') : ''
+
+  const renderLeaderItem = (item, i, isActive) => {
+    const p = item.prediction
+    const isTop = isActive && i === 0
+    return (
+      <div key={item.ticker} className={`leader-item ${isTop ? 'leader-item-top' : ''} ${!isActive ? 'leader-item-dormant' : ''}`}>
+        <div className="leader-item-left">
+          <div className={`leader-rank-badge ${LEADER_RANK_CLASS[item.leaderRank]}`}>
+            {LEADER_RANK_LABEL[item.leaderRank]}
+          </div>
+          <div className="leader-ticker">{item.ticker}</div>
+          <div className="leader-name">{item.name}</div>
+          <div className="leader-sector-tag">{item.sector}</div>
+        </div>
+        <div className="leader-item-center">
+          <div className={`leader-direction ${p.direction === 'UP' ? 'up' : 'down'}`}>
+            {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
+          </div>
+          <div className="leader-score">
+            安定スコア <span className={p.stableScore > 0 ? 'val-up' : 'val-down'}>
+              {p.stableScore > 0 ? '+' : ''}{p.stableScore}
+            </span>
+          </div>
+          <div className="leader-conf">確信度 {p.confidence}%</div>
+          <IndicatorBadges p={p} />
+          {isActive && <EntryJudgmentBadge p={p} compact />}
+        </div>
+        <div className="leader-item-right">
+          <p className="leader-reason">{item.leaderReason}</p>
+          <button className="btn-select-ticker" onClick={() => onSelectTicker(item.ticker)}>
+            詳細分析 →
+          </button>
+          {isActive && onRecordTrade && (
+            <button
+              className="btn-tj-record"
+              title="購入を記録"
+              onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
+            >
+              📝
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="card leader-panel">
@@ -592,7 +647,7 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
         <div>
           <div className="leader-panel-title">先導株分析</div>
           <div className="leader-panel-subtitle">
-            CLEAR TRADE理論：市場を牽引する{CT_LEADERS.length}銘柄をリアルタイム分析
+            CT理論：{CT_LEADERS.length}銘柄から「今日現在、市場を牽引している銘柄」のみを表示
           </div>
         </div>
         <button className="btn-leader" onClick={run} disabled={isAnalyzing}>
@@ -603,7 +658,7 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
       <div className="leader-intro">
         <p>
           CT理論では「先導株（市場全体を先行して動かす銘柄）を特定し、その流れに乗る」ことが最重要戦略です。
-          全体の<strong>2〜3%</strong>しか存在しない先導株を見極め、その中で最も強いシグナルが出ている銘柄に集中することが原則です。
+          先導株は全体の<strong>2〜3%</strong>しか存在せず、<strong>上昇トレンド＋安定スコア+2以上＋分散シグナルなし</strong>の3条件を満たす銘柄のみを「アクティブ先導株」として表示します。
         </p>
       </div>
 
@@ -611,61 +666,54 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
 
       {results && (
         <>
-          <div className="leader-results">
-            {results.map((item, i) => {
-              const p = item.prediction
-              const isTop = i === 0
-              return (
-                <div key={item.ticker} className={`leader-item ${isTop ? 'leader-item-top' : ''}`}>
-                  <div className="leader-item-left">
-                    <div className={`leader-rank-badge ${LEADER_RANK_CLASS[item.leaderRank]}`}>
-                      {LEADER_RANK_LABEL[item.leaderRank]}
-                    </div>
-                    <div className="leader-ticker">{item.ticker}</div>
-                    <div className="leader-name">{item.name}</div>
-                    <div className="leader-sector-tag">{item.sector}</div>
-                  </div>
-                  <div className="leader-item-center">
-                    <div className={`leader-direction ${p.direction === 'UP' ? 'up' : 'down'}`}>
-                      {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
-                    </div>
-                    <div className="leader-score">
-                      安定スコア <span className={p.stableScore > 0 ? 'val-up' : 'val-down'}>
-                        {p.stableScore > 0 ? '+' : ''}{p.stableScore}
-                      </span>
-                    </div>
-                    <div className="leader-conf">確信度 {p.confidence}%</div>
-                    <IndicatorBadges p={p} />
-                    <EntryJudgmentBadge p={p} compact />
-                  </div>
-                  <div className="leader-item-right">
-                    <p className="leader-reason">{item.leaderReason}</p>
-                    <button
-                      className="btn-select-ticker"
-                      onClick={() => onSelectTicker(item.ticker)}
-                    >
-                      詳細分析 →
-                    </button>
-                    {onRecordTrade && (
-                      <button
-                        className="btn-tj-record"
-                        title="購入を記録"
-                        onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
-                      >
-                        📝
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+          {/* アクティブカウンター */}
+          <div className="leader-active-count">
+            <span className={activeResults.length > 0 ? 'leader-count-active' : 'leader-count-zero'}>
+              アクティブ先導株 {activeResults.length} / {results.length} 銘柄
+            </span>
+            {activeResults.length === 0 && (
+              <span className="leader-count-hint">
+                — 現在HARD相場または転換点の可能性。先導株が動き出すまで待機推奨
+              </span>
+            )}
           </div>
-          <TopRecommendations items={results} onSelectTicker={onSelectTicker} onRecordTrade={onRecordTrade} />
+
+          {/* アクティブ先導株 */}
+          {activeResults.length > 0 ? (
+            <div className="leader-results">
+              {activeResults.map((item, i) => renderLeaderItem(item, i, true))}
+            </div>
+          ) : (
+            <div className="leader-none-active">
+              現在、アクティブ先導株はありません。{results.length}銘柄全てが「上昇トレンド＋安定スコア+2以上＋分散シグナルなし」の条件を満たしていません。
+              CT理論の原則に従い、市場への新規参入は見送りを推奨します。
+            </div>
+          )}
+
+          <TopRecommendations items={activeResults} onSelectTicker={onSelectTicker} onRecordTrade={onRecordTrade} />
+
           {topTickers && (
             <button className="btn-select-set" onClick={() => onSelectSet(topTickers)}>
-              ▶ 上位銘柄を比較分析する（フォームに入力）
+              ▶ アクティブ先導株を比較分析する（フォームに入力）
             </button>
           )}
+
+          {/* 非アクティブ先導株（折りたたみ） */}
+          {dormantResults.length > 0 && (
+            <details className="leader-dormant-section">
+              <summary className="leader-dormant-title">
+                非アクティブ先導株（{dormantResults.length}銘柄）— 下降・品質不足・分散シグナルあり
+              </summary>
+              <div className="leader-dormant-note">
+                以下は先導株候補リストに含まれますが、現時点では牽引役として機能していません。
+                先導株が多数ここに入る場合はHARD相場のサインです。
+              </div>
+              <div className="leader-results leader-results-dormant">
+                {dormantResults.map((item, i) => renderLeaderItem(item, i, false))}
+              </div>
+            </details>
+          )}
+
           <p className="disclaimer" style={{ marginTop: 12 }}>
             ※ 先導株リストは2026年5月調査時点。市場環境の変化により随時更新が必要です。
           </p>
