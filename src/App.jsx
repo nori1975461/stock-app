@@ -243,15 +243,20 @@ function CTMetrics({ p }) {
           {d2 !== null && d2.status !== 'NO_SIGNAL' && (
             <div className="metric">
               <span>2日目確認</span>
-              <strong className={
-                d2.isConfirmed && d2.day1Dir > 0  ? 'val-up' :
-                d2.isConfirmed && d2.day1Dir < 0  ? 'val-down' :
-                !d2.isConfirmed && d2.day1Dir > 0 ? 'val-down' : 'val-up'
-              }>
-                {d2.isConfirmed
-                  ? (d2.day1Dir > 0 ? '✓ 確認済み' : '✗ 下落確定')
-                  : (d2.day1Dir > 0 ? '✗ 否定' : '△ 底打ち?')}
-              </strong>
+              <div className="metric-val-wrap">
+                <strong className={
+                  d2.isConfirmed && d2.day1Dir > 0  ? 'val-up' :
+                  d2.isConfirmed && d2.day1Dir < 0  ? 'val-down' :
+                  !d2.isConfirmed && d2.day1Dir > 0 ? 'val-down' : 'val-up'
+                }>
+                  {d2.isConfirmed
+                    ? (d2.day1Dir > 0 ? '✓ 確認済み' : '✗ 下落確定')
+                    : (d2.day1Dir > 0 ? '✗ 否定' : '△ 底打ち?')}
+                </strong>
+                {!d2.isConfirmed && d2.day1Dir < 0 && (
+                  <span className="metric-note">1日の跳ね返りかもという不確実性あり</span>
+                )}
+              </div>
             </div>
           )}
           </div>
