@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
@@ -324,7 +324,7 @@ function ExitPanel({ p }) {
 
 // ── 次元1：相場環境判断パネル ──────────────────────────────────────────────────
 // CT理論2段階プロセス：業種の強さを確認 → 最強セクターからS-rank先導株を動的選定
-function MarketPhasePanel({ gasUrl, onSelectTicker }) {
+function MarketPhasePanel({ gasUrl, onSelectTicker, onPhaseResolved }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [results, setResults]         = useState(null)
   const [error, setError]             = useState(null)
@@ -390,6 +390,7 @@ function MarketPhasePanel({ gasUrl, onSelectTicker }) {
     }
 
     setResults({ usStocks, jpSectors, usUpCount, usWithPred, jpUpCount, jpTotal, overallPhase, overallDesc, sRankCandidate })
+    onPhaseResolved?.(overallPhase)
     setIsAnalyzing(false)
   }
 
@@ -549,7 +550,7 @@ function MarketPhasePanel({ gasUrl, onSelectTicker }) {
 }
 
 // ── 先導株パネル ──────────────────────────────────────────────────────────────
-function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet }) {
+function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [results, setResults]         = useState(null)
   const [error, setError]             = useState(null)
@@ -635,6 +636,15 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet }) {
                     >
                       詳細分析 →
                     </button>
+                    {onRecordTrade && (
+                      <button
+                        className="btn-tj-record"
+                        title="購入を記録"
+                        onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
+                      >
+                        📝
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -655,7 +665,7 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet }) {
 }
 
 // ── CTスクリーニングパネル ──────────────────────────────────────────────────
-function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
+function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
   const [isScanning, setIsScanning]   = useState(false)
   const [progress, setProgress]       = useState({ current: 0, total: 0 })
   const [results, setResults]         = useState(null)
@@ -769,12 +779,23 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
                       ))}
                     </div>
                   </div>
-                  <button
-                    className="btn-select-ticker"
-                    onClick={() => onSelectTicker(item.ticker)}
-                  >
-                    詳細 →
-                  </button>
+                  <div className="screener-item-btns">
+                    <button
+                      className="btn-select-ticker"
+                      onClick={() => onSelectTicker(item.ticker)}
+                    >
+                      詳細 →
+                    </button>
+                    {onRecordTrade && (
+                      <button
+                        className="btn-tj-record"
+                        title="購入を記録"
+                        onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
+                      >
+                        📝
+                      </button>
+                    )}
+                  </div>
                 </div>
               )
             })}
@@ -793,58 +814,141 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
   )
 }
 
-// ── トレード記録パネル ──────────────────────────────────────────────────────
-function TradeJournalPanel() {
-  const today = () => new Date().toISOString().slice(0, 10)
+// ── CT分析データをトレード記録用オブジェクトに変換 ──────────────────────────
+function buildTradeData(ticker, sector, name, p) {
+  return {
+    ticker,
+    name:                  name  || '',
+    sector:                sector || '',
+    direction:             p.direction,
+    stableScore:           p.stableScore,
+    confidence:            p.confidence,
+    lastClose:             p.lastClose,
+    relativeVolume:        p.relativeVolume,
+    disciplinaryPct:       p.disciplinaryPct,
+    obvTrend:              p.obvTrend,
+    trendDays:             p.trendDays,
+    isStagnating:          p.isStagnating,
+    magnetStatus:          p.magnetEffect   ? p.magnetEffect.status        : null,
+    initialVelocityLevel:  p.initialVelocity ? p.initialVelocity.level     : null,
+    day2ConfirmStatus:     p.day2Confirmation ? p.day2Confirmation.status   : null,
+    exitSignal:            p.exitJudgment   ? p.exitJudgment.exitRecommendation : null,
+  }
+}
 
-  const [trades, setTrades] = useState(() => {
+// ── トレード記録パネル ──────────────────────────────────────────────────────
+function TradeJournalPanel({ preFill, onPreFillConsumed }) {
+  const today    = () => new Date().toISOString().slice(0, 10)
+  const panelRef = useRef(null)
+
+  const [trades, setTrades]         = useState(() => {
     try { return JSON.parse(localStorage.getItem('ct_trades') || '[]') } catch { return [] }
   })
-  const [showForm, setShowForm]   = useState(false)
-  const [exitId, setExitId]       = useState(null)
-  const [form, setForm]           = useState({
-    ticker: '', entryDate: today(), entryPrice: '',
-    stableScore: '', direction: 'UP', marketPhase: 'NORMAL', note: ''
-  })
-  const [exitForm, setExitForm]   = useState({ exitDate: today(), exitPrice: '', exitReason: '自分の判断' })
+  const [showForm, setShowForm]     = useState(false)
+  const [isPreFill, setIsPreFill]   = useState(false)
+  const [autoData, setAutoData]     = useState(null)
+  const [entryDate, setEntryDate]   = useState(today())
+  const [entryPrice, setEntryPrice] = useState('')
+  const [manualTicker, setManualTicker] = useState('')
+  const [exitId, setExitId]         = useState(null)
+  const [exitForm, setExitForm]     = useState({ exitDate: today(), exitPrice: '', exitReason: '利確' })
+
+  // preFillが届いたら自動でフォームを開く
+  useEffect(() => {
+    if (!preFill) return
+    setAutoData(preFill)
+    setIsPreFill(true)
+    setEntryDate(today())
+    setEntryPrice('')
+    setShowForm(true)
+    onPreFillConsumed?.()
+    setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+  }, [preFill])
 
   const save = (next) => { setTrades(next); localStorage.setItem('ct_trades', JSON.stringify(next)) }
 
   const addTrade = () => {
-    if (!form.ticker.trim() || !form.entryPrice) return
+    const ticker = isPreFill ? autoData.ticker : manualTicker.trim().toUpperCase()
+    if (!ticker || !entryPrice) return
     save([{
-      id: Date.now().toString(), ...form,
-      ticker: form.ticker.trim().toUpperCase(),
-      entryPrice: +form.entryPrice,
-      stableScore: form.stableScore !== '' ? +form.stableScore : null,
-      exitDate: null, exitPrice: null, exitReason: null
+      id: Date.now().toString(),
+      ticker,
+      name:                  autoData?.name  || '',
+      sector:                autoData?.sector || '',
+      direction:             autoData?.direction             ?? null,
+      stableScore:           autoData?.stableScore           ?? null,
+      confidence:            autoData?.confidence            ?? null,
+      relativeVolume:        autoData?.relativeVolume        ?? null,
+      disciplinaryPct:       autoData?.disciplinaryPct       ?? null,
+      obvTrend:              autoData?.obvTrend              || null,
+      trendDays:             autoData?.trendDays             ?? null,
+      isStagnating:          autoData?.isStagnating          ?? null,
+      magnetStatus:          autoData?.magnetStatus          || null,
+      initialVelocityLevel:  autoData?.initialVelocityLevel  || null,
+      day2ConfirmStatus:     autoData?.day2ConfirmStatus     || null,
+      exitSignal:            autoData?.exitSignal            || null,
+      marketPhase:           autoData?.marketPhase           || null,
+      entryRefClose:         autoData?.lastClose             || null,
+      entryDate,
+      entryPrice: +entryPrice,
+      exitDate: null, exitPrice: null, exitReason: null,
     }, ...trades])
     setShowForm(false)
-    setForm({ ticker: '', entryDate: today(), entryPrice: '', stableScore: '', direction: 'UP', marketPhase: 'NORMAL', note: '' })
+    setIsPreFill(false)
+    setAutoData(null)
+    setEntryDate(today())
+    setEntryPrice('')
+    setManualTicker('')
   }
 
   const recordExit = (id) => {
     if (!exitForm.exitPrice) return
-    save(trades.map(t => t.id === id ? { ...t, exitDate: exitForm.exitDate, exitPrice: +exitForm.exitPrice, exitReason: exitForm.exitReason } : t))
+    save(trades.map(t => t.id === id
+      ? { ...t, exitDate: exitForm.exitDate, exitPrice: +exitForm.exitPrice, exitReason: exitForm.exitReason }
+      : t
+    ))
     setExitId(null)
-    setExitForm({ exitDate: today(), exitPrice: '', exitReason: '自分の判断' })
+    setExitForm({ exitDate: today(), exitPrice: '', exitReason: '利確' })
   }
 
-  const deleteTrade = (id) => { if (window.confirm('このトレード記録を削除しますか？')) save(trades.filter(t => t.id !== id)) }
+  const deleteTrade = (id) => {
+    if (window.confirm('このトレード記録を削除しますか？')) save(trades.filter(t => t.id !== id))
+  }
 
   const pnl  = (t) => t.exitPrice && t.entryPrice ? ((t.exitPrice - t.entryPrice) / t.entryPrice * 100).toFixed(1) : null
-  const days = (t) => t.exitDate  && t.entryDate  ? Math.round((new Date(t.exitDate) - new Date(t.entryDate)) / 86400000) : null
+  const daysHeld = (t) => t.exitDate && t.entryDate ? Math.round((new Date(t.exitDate) - new Date(t.entryDate)) / 86400000) : null
 
   const exportCSV = () => {
-    const hdr  = ['購入日','ティッカー','購入価格','安定スコア','方向','相場環境','メモ','売却日','売却価格','損益%','保有日数','売却理由']
-    const rows = trades.map(t => [
-      t.entryDate, t.ticker, t.entryPrice, t.stableScore ?? '', t.direction, t.marketPhase, t.note || '',
-      t.exitDate || '', t.exitPrice || '', pnl(t) ? pnl(t) + '%' : '', days(t) ?? '', t.exitReason || ''
-    ])
-    const csv  = [hdr, ...rows].map(r => r.join(',')).join('\n')
-    const url  = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }))
-    const a    = Object.assign(document.createElement('a'), { href: url, download: `ct_trades_${today()}.csv` })
+    const hdr = ['購入日','ティッカー','会社名','セクター','方向','安定スコア','確信度','出来高比率','規律可能性%','OBV','連続日数','停滞','マグネット','初速','2日目確認','エグジット信号','相場環境','購入価格','参考終値','売却日','売却価格','損益%','保有日数','売却理由']
+    const rows = trades.map(t => {
+      const p = pnl(t); const d = daysHeld(t)
+      return [
+        t.entryDate, t.ticker, t.name || '', t.sector || '',
+        t.direction || '', t.stableScore ?? '', t.confidence ?? '',
+        t.relativeVolume != null ? (t.relativeVolume * 100).toFixed(0) + '%' : '',
+        t.disciplinaryPct ?? '',
+        t.obvTrend || '', t.trendDays ?? '',
+        t.isStagnating == null ? '' : (t.isStagnating ? '有' : '無'),
+        t.magnetStatus || '', t.initialVelocityLevel || '', t.day2ConfirmStatus || '',
+        t.exitSignal || '', t.marketPhase || '',
+        t.entryPrice, t.entryRefClose || '',
+        t.exitDate || '', t.exitPrice || '',
+        p ? p + '%' : '', d ?? '', t.exitReason || '',
+      ]
+    })
+    const csv = [hdr, ...rows].map(r => r.join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }))
+    const a   = Object.assign(document.createElement('a'), { href: url, download: `ct_trades_${today()}.csv` })
     a.click(); URL.revokeObjectURL(url)
+  }
+
+  const handleNewManual = () => {
+    setIsPreFill(false)
+    setAutoData(null)
+    setEntryDate(today())
+    setEntryPrice('')
+    setManualTicker('')
+    setShowForm(v => !v)
   }
 
   const holding = trades.filter(t => !t.exitDate)
@@ -853,17 +957,23 @@ function TradeJournalPanel() {
   const winRate = closed.length > 0 ? Math.round(wins / closed.length * 100) : null
 
   const phaseClass = { EASY: 'tj-phase-easy', NORMAL: 'tj-phase-normal', HARD: 'tj-phase-hard' }
+  const obvLabel   = (v) => v === 'UP' ? '▲ 上昇' : v === 'DOWN' ? '▼ 下降' : '━ 横ばい'
+  const magLabel   = (s) => {
+    if (!s) return '-'
+    const MAP = { NEW_HIGH: '新高値', BREAKOUT: 'ブレイクアウト', APPROACHING: '接近中', RESISTANCE: '抵抗帯', FAR: '遠い' }
+    return MAP[s] || s
+  }
 
   return (
-    <div className="card trade-journal-panel">
+    <div className="card trade-journal-panel" ref={panelRef}>
       <div className="tj-header">
         <div>
           <div className="tj-title">トレード記録</div>
           <div className="tj-subtitle">CT理論に基づく売買履歴・損益管理</div>
         </div>
         <div className="tj-header-btns">
-          <button className="btn-tj-add" onClick={() => setShowForm(v => !v)}>
-            {showForm ? '▲ 閉じる' : '＋ 新規記録'}
+          <button className="btn-tj-add" onClick={handleNewManual}>
+            {showForm && !isPreFill ? '▲ 閉じる' : '＋ 新規記録'}
           </button>
           {trades.length > 0 && (
             <button className="btn-tj-csv" onClick={exportCSV}>CSV出力</button>
@@ -883,43 +993,130 @@ function TradeJournalPanel() {
         </div>
       )}
 
-      {/* 新規記録フォーム */}
+      {/* エントリーフォーム */}
       {showForm && (
         <div className="tj-form">
-          <div className="tj-form-title">エントリー記録</div>
-          <div className="tj-form-grid">
-            <label>ティッカー
-              <input value={form.ticker} onChange={e => setForm(f => ({...f, ticker: e.target.value.toUpperCase()}))} placeholder="例: 5803.T" />
+          <div className="tj-form-title">
+            {isPreFill && autoData ? `📝 ${autoData.ticker}（${autoData.name || ''}）— エントリー記録` : 'エントリー記録（手動）'}
+          </div>
+
+          {/* 手動入力時のみティッカー入力欄を表示 */}
+          {!isPreFill && (
+            <label className="tj-note-label">ティッカー
+              <input value={manualTicker} onChange={e => setManualTicker(e.target.value.toUpperCase())} placeholder="例: 5803.T" />
             </label>
+          )}
+
+          {/* CT自動入力データ（プレフィル時のみ） */}
+          {isPreFill && autoData && (
+            <div className="tj-prefill-section">
+              <div className="tj-prefill-label">CT分析データ（自動記録 — 14項目）</div>
+              {autoData.lastClose != null && (
+                <div className="tj-ref-price">
+                  直近終値（参考）: <strong>¥{autoData.lastClose.toLocaleString()}</strong>
+                </div>
+              )}
+              <div className="tj-prefill-grid">
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">方向</span>
+                  <span className={`tj-pf-val ${autoData.direction === 'UP' ? 'val-up' : 'val-down'}`}>
+                    {autoData.direction === 'UP' ? '▲ UP' : '▼ DOWN'}
+                  </span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">安定スコア</span>
+                  <span className={`tj-pf-val ${autoData.stableScore > 0 ? 'val-up' : 'val-down'}`}>
+                    {autoData.stableScore > 0 ? '+' : ''}{autoData.stableScore}
+                  </span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">確信度</span>
+                  <span className="tj-pf-val">{autoData.confidence}%</span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">OBV</span>
+                  <span className={`tj-pf-val ${autoData.obvTrend === 'UP' ? 'val-up' : autoData.obvTrend === 'DOWN' ? 'val-down' : ''}`}>
+                    {obvLabel(autoData.obvTrend)}
+                  </span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">出来高比率</span>
+                  <span className="tj-pf-val">
+                    {autoData.relativeVolume != null ? (autoData.relativeVolume * 100).toFixed(0) + '%' : '-'}
+                  </span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">規律可能性</span>
+                  <span className="tj-pf-val">{autoData.disciplinaryPct != null ? autoData.disciplinaryPct + '%' : '-'}</span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">連続日数</span>
+                  <span className="tj-pf-val">{autoData.trendDays != null ? autoData.trendDays + '日' : '-'}</span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">停滞シグナル</span>
+                  <span className={`tj-pf-val ${autoData.isStagnating ? 'val-up' : ''}`}>
+                    {autoData.isStagnating == null ? '-' : autoData.isStagnating ? '有り' : '無し'}
+                  </span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">マグネット</span>
+                  <span className="tj-pf-val">{magLabel(autoData.magnetStatus)}</span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">初速判定</span>
+                  <span className="tj-pf-val">{autoData.initialVelocityLevel || '-'}</span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">2日目確認</span>
+                  <span className="tj-pf-val">{autoData.day2ConfirmStatus || '-'}</span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className={`tj-pf-val ${autoData.exitSignal && autoData.exitSignal !== 'HOLD' ? 'val-down' : 'val-up'}`}>
+                    <span className="tj-pf-label">エグジット信号</span>
+                    {autoData.exitSignal || '-'}
+                  </span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">相場環境</span>
+                  <span className={`tj-pf-val tj-phase-text-${(autoData.marketPhase || '').toLowerCase()}`}>
+                    {autoData.marketPhase || '-'}
+                  </span>
+                </div>
+                <div className="tj-pf-item">
+                  <span className="tj-pf-label">セクター</span>
+                  <span className="tj-pf-val">{autoData.sector || '-'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ユーザー入力: 購入日 + 購入価格のみ */}
+          <div className="tj-user-inputs">
             <label>購入日
-              <input type="date" value={form.entryDate} onChange={e => setForm(f => ({...f, entryDate: e.target.value}))} />
+              <input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} />
             </label>
             <label>購入価格（円）
-              <input type="number" value={form.entryPrice} onChange={e => setForm(f => ({...f, entryPrice: e.target.value}))} placeholder="例: 6200" />
-            </label>
-            <label>安定スコア
-              <input type="number" value={form.stableScore} onChange={e => setForm(f => ({...f, stableScore: e.target.value}))} placeholder="例: +7" min="-10" max="10" />
-            </label>
-            <label>方向判定
-              <select value={form.direction} onChange={e => setForm(f => ({...f, direction: e.target.value}))}>
-                <option value="UP">▲ UP</option>
-                <option value="DOWN">▼ DOWN</option>
-              </select>
-            </label>
-            <label>相場環境
-              <select value={form.marketPhase} onChange={e => setForm(f => ({...f, marketPhase: e.target.value}))}>
-                <option value="EASY">EASY相場</option>
-                <option value="NORMAL">NORMAL相場</option>
-                <option value="HARD">HARD相場</option>
-              </select>
+              <input
+                type="number"
+                value={entryPrice}
+                onChange={e => setEntryPrice(e.target.value)}
+                placeholder={autoData?.lastClose != null ? `参考: ¥${autoData.lastClose.toLocaleString()}` : '例: 6200'}
+              />
             </label>
           </div>
-          <label className="tj-note-label">メモ（任意）
-            <input value={form.note} onChange={e => setForm(f => ({...f, note: e.target.value}))} placeholder="例: OBV強い、停滞シグナルあり" />
-          </label>
+
           <div className="tj-form-actions">
-            <button className="btn-tj-save" onClick={addTrade} disabled={!form.ticker || !form.entryPrice}>記録する</button>
-            <button className="btn-tj-cancel" onClick={() => setShowForm(false)}>キャンセル</button>
+            <button
+              className="btn-tj-save"
+              onClick={addTrade}
+              disabled={isPreFill ? !entryPrice : (!manualTicker.trim() || !entryPrice)}
+            >
+              記録する
+            </button>
+            <button className="btn-tj-cancel" onClick={() => { setShowForm(false); setIsPreFill(false); setAutoData(null) }}>
+              キャンセル
+            </button>
           </div>
         </div>
       )}
@@ -932,9 +1129,17 @@ function TradeJournalPanel() {
             <div key={t.id} className="tj-trade-item tj-holding">
               <div className="tj-trade-left">
                 <span className="tj-trade-ticker">{t.ticker}</span>
-                <span className={`tj-trade-phase ${phaseClass[t.marketPhase] || ''}`}>{t.marketPhase}</span>
-                <span className={`tj-trade-dir ${t.direction === 'UP' ? 'val-up' : 'val-down'}`}>{t.direction === 'UP' ? '▲' : '▼'}</span>
-                {t.stableScore !== null && <span className="tj-trade-score">安定{t.stableScore > 0 ? '+' : ''}{t.stableScore}</span>}
+                {t.marketPhase && (
+                  <span className={`tj-trade-phase ${phaseClass[t.marketPhase] || ''}`}>{t.marketPhase}</span>
+                )}
+                {t.direction && (
+                  <span className={`tj-trade-dir ${t.direction === 'UP' ? 'val-up' : 'val-down'}`}>
+                    {t.direction === 'UP' ? '▲' : '▼'}
+                  </span>
+                )}
+                {t.stableScore != null && (
+                  <span className="tj-trade-score">安定{t.stableScore > 0 ? '+' : ''}{t.stableScore}</span>
+                )}
               </div>
               <div className="tj-trade-right">
                 <span className="tj-trade-meta">¥{t.entryPrice.toLocaleString()}　{t.entryDate}</span>
@@ -943,16 +1148,22 @@ function TradeJournalPanel() {
                     <input type="date" value={exitForm.exitDate} onChange={e => setExitForm(f => ({...f, exitDate: e.target.value}))} />
                     <input type="number" value={exitForm.exitPrice} onChange={e => setExitForm(f => ({...f, exitPrice: e.target.value}))} placeholder="売却価格" />
                     <select value={exitForm.exitReason} onChange={e => setExitForm(f => ({...f, exitReason: e.target.value}))}>
-                      <option>自分の判断</option>
+                      <option>利確</option>
                       <option>分散エグジット発動</option>
                       <option>損切り</option>
+                      <option>その他</option>
                     </select>
                     <button className="btn-tj-exit-ok" onClick={() => recordExit(t.id)}>確定</button>
                     <button className="btn-tj-cancel" onClick={() => setExitId(null)}>×</button>
                   </div>
                 ) : (
                   <div className="tj-trade-actions">
-                    <button className="btn-tj-exit" onClick={() => { setExitId(t.id); setExitForm({ exitDate: today(), exitPrice: '', exitReason: '自分の判断' }) }}>手仕舞い記録</button>
+                    <button
+                      className="btn-tj-exit"
+                      onClick={() => { setExitId(t.id); setExitForm({ exitDate: today(), exitPrice: '', exitReason: '利確' }) }}
+                    >
+                      手仕舞い記録
+                    </button>
                     <button className="btn-tj-del" onClick={() => deleteTrade(t.id)}>削除</button>
                   </div>
                 )}
@@ -967,19 +1178,20 @@ function TradeJournalPanel() {
         <div className="tj-section">
           <div className="tj-section-title">完了 ({closed.length}件)</div>
           {closed.map(t => {
-            const p = pnl(t); const d = days(t)
+            const p = pnl(t); const d = daysHeld(t)
             return (
               <div key={t.id} className={`tj-trade-item ${+p > 0 ? 'tj-win' : 'tj-loss'}`}>
                 <div className="tj-trade-left">
                   <span className="tj-trade-ticker">{t.ticker}</span>
-                  <span className={`tj-trade-phase ${phaseClass[t.marketPhase] || ''}`}>{t.marketPhase}</span>
-                  <span className={`tj-pnl ${+p > 0 ? 'val-up' : 'val-down'}`}>{p > 0 ? '+' : ''}{p}%</span>
+                  {t.marketPhase && (
+                    <span className={`tj-trade-phase ${phaseClass[t.marketPhase] || ''}`}>{t.marketPhase}</span>
+                  )}
+                  <span className={`tj-pnl ${+p > 0 ? 'val-up' : 'val-down'}`}>{+p > 0 ? '+' : ''}{p}%</span>
                 </div>
                 <div className="tj-trade-right">
                   <span className="tj-trade-meta">
                     {t.entryDate}→{t.exitDate}　{d !== null ? `${d}日` : ''}　{t.exitReason}
                   </span>
-                  {t.note && <span className="tj-trade-note">{t.note}</span>}
                   <button className="btn-tj-del" onClick={() => deleteTrade(t.id)}>削除</button>
                 </div>
               </div>
@@ -989,7 +1201,7 @@ function TradeJournalPanel() {
       )}
 
       {trades.length === 0 && !showForm && (
-        <div className="tj-empty">「＋ 新規記録」から最初のトレードを記録してください。</div>
+        <div className="tj-empty">各分析パネルの「📝」ボタンからCTデータを自動取り込みできます。または「＋ 新規記録」から手動入力も可能です。</div>
       )}
     </div>
   )
@@ -1241,6 +1453,11 @@ export default function App() {
   const [result, setResult]         = useState(null)
   const [rankingResults, setRankingResults]   = useState(null)
   const [selectedDetail, setSelectedDetail]   = useState(null)
+  const [lastMarketPhase, setLastMarketPhase] = useState(null)
+  const [tradePreFill, setTradePreFill]       = useState(null)
+
+  const handlePhaseResolved = (phase) => setLastMarketPhase(phase)
+  const handleRecordTrade   = (ctData) => setTradePreFill({ ...ctData, marketPhase: ctData.marketPhase ?? lastMarketPhase })
 
   // スクリーナー・先導株から銘柄をフォームに送り込むコールバック
   const handleSelectTicker = (ticker) => {
@@ -1387,6 +1604,7 @@ export default function App() {
       <MarketPhasePanel
         gasUrl={gasUrl.trim()}
         onSelectTicker={handleSelectTicker}
+        onPhaseResolved={handlePhaseResolved}
       />
 
       {/* ── 先導株パネル ── */}
@@ -1394,6 +1612,7 @@ export default function App() {
         gasUrl={gasUrl.trim()}
         onSelectTicker={handleSelectTicker}
         onSelectSet={handleSelectSet}
+        onRecordTrade={handleRecordTrade}
       />
 
       {/* ── CTスクリーニングパネル ── */}
@@ -1401,10 +1620,14 @@ export default function App() {
         gasUrl={gasUrl.trim()}
         onSelectTicker={handleSelectTicker}
         onSelectSet={handleSelectSet}
+        onRecordTrade={handleRecordTrade}
       />
 
       {/* ── トレード記録パネル ── */}
-      <TradeJournalPanel />
+      <TradeJournalPanel
+        preFill={tradePreFill}
+        onPreFillConsumed={() => setTradePreFill(null)}
+      />
 
       {/* ── 単体分析結果 ── */}
       {result && (
@@ -1481,6 +1704,13 @@ export default function App() {
           <div className="chart-wrap">
             <StockChart chartData={result.chartData} />
           </div>
+
+          <button
+            className="btn-tj-record-main"
+            onClick={() => handleRecordTrade(buildTradeData(result.ticker, getStockSector(result.ticker) || '', result.name || '', result))}
+          >
+            📝 購入を記録
+          </button>
 
           <p className="disclaimer">※ CLEAR TRADE理論（出来高＋純粋チャート分析）による参考情報です。投資判断の最終責任はご自身にあります。</p>
         </div>
