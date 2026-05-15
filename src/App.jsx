@@ -998,16 +998,27 @@ function computeEntryJudgment(p) {
     return { grade: 'CAUTION', label: '慎重に', icon: '△', cls: 'ej-caution',
       desc: '2日目確認否定 — 上昇初動が翌日に否定されました。再度の上昇シグナルを待ってください' }
 
-  // CT理論最強シグナル：2条件がともに揃う場合のみ【買いを強く推奨】
+  // CT理論最強シグナル：品質ゲート＋2条件がともに揃う場合のみ【買いを強く推奨】
+  // 品質ゲート：週次安定指標で銘柄品質を担保
+  if (ss < 2) return { grade: 'OK', label: 'エントリー可', icon: '◎', cls: 'ej-ok',
+    desc: 'UPトレンド＋保有継続シグナル — エントリー条件を満たしています（安定スコアが+2未満のため強推奨には至らず）' }
+
   // 条件1：規律可能性の高い銘柄を出来高と方向性が揃うタイミングで買う
-  const cond1 = (p.disciplinaryPct ?? 0) >= 70 && (p.relativeVolume ?? 0) > 1.2
-  // 条件2：初速超高速かつ2日目確認済み
+  // relativeVolume > 1.3 はCTスコアリング閾値と一致（「資金流入の強い買い」判定ライン）
+  // obvTrend UP で15日間の持続的機関投資家買いを確認（単日スパイクとの差別化）
+  const cond1 = (p.disciplinaryPct ?? 0) >= 70
+             && (p.relativeVolume ?? 0) > 1.3
+             && p.obvTrend === 'UP'
+  // 条件2：初速超高速かつ2日目確認済み（CT理論が定義する最強エントリーシグナル）
   const cond2 = iv?.level === 'VERY_HIGH' && iv?.isAligned && iv?.currentDir > 0
              && d2Active && d2.isConfirmed && d2.day1Dir > 0
 
-  if (cond1 && cond2)
+  if (cond1 && cond2) {
+    const magBonus = (p.magnetEffect?.status === 'NEW_HIGH' || p.magnetEffect?.status === 'BREAKOUT')
+      ? '＋新高値更新（上値抵抗なし） ' : ''
     return { grade: 'STRONG_BUY', label: '買いを強く推奨', icon: '★', cls: 'ej-strong-buy',
-      desc: '規律可能性高＋出来高整合＋初速超高速＋2日目確認 — CT理論が定義する最強シグナルが全て揃っています' }
+      desc: `規律可能性高＋出来高整合＋OBV上昇＋初速超高速＋2日目確認 ${magBonus}— CT理論が定義する最強シグナルが全て揃っています` }
+  }
 
   return { grade: 'OK', label: 'エントリー可', icon: '◎', cls: 'ej-ok',
     desc: 'UPトレンド＋保有継続シグナル＋安定スコア正 — CT理論の基本エントリー条件を満たしています' }
