@@ -1,6 +1,9 @@
 // マクロ環境データ（2026年5月12日調査）
 // AI開発競争・シンギュラリティ・A2A取引・日本マクロ環境を総合スコア化
 
+// USD/JPY 換算レート（月1回程度ユーザーが更新する）
+export const USD_JPY_RATE = 146
+
 export const MACRO_CONTEXT = {
   researchDate: '2026年5月12日',
   totalScore: 2.5,      // -10〜+10（+がポジティブ）

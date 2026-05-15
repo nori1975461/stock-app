@@ -3,7 +3,7 @@ import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveCont
 import { fetchStockData } from './utils/api'
 import { predict } from './utils/prediction'
 import { getSameIndustryRecommendations, getStockSector } from './utils/industries'
-import { MACRO_CONTEXT, SECTOR_MACRO } from './utils/macroContext'
+import { MACRO_CONTEXT, SECTOR_MACRO, USD_JPY_RATE } from './utils/macroContext'
 import { CT_UNIVERSE, CT_LEADERS, LEADER_RANK_LABEL, LEADER_RANK_CLASS, SECTOR_BAROMETERS } from './utils/ctUniverse'
 
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位', '6位', '7位', '8位', '9位', '10位']
@@ -1011,11 +1011,23 @@ function TradeJournalPanel({ preFill, onPreFillConsumed }) {
           {isPreFill && autoData && (
             <div className="tj-prefill-section">
               <div className="tj-prefill-label">CT分析データ（自動記録 — 14項目）</div>
-              {autoData.lastClose != null && (
-                <div className="tj-ref-price">
-                  直近終値（参考）: <strong>¥{autoData.lastClose.toLocaleString()}</strong>
-                </div>
-              )}
+              {autoData.lastClose != null && (() => {
+                const isUS  = !autoData.ticker.endsWith('.T')
+                const jpyVal = isUS
+                  ? Math.round(autoData.lastClose * USD_JPY_RATE)
+                  : Math.round(autoData.lastClose)
+                return (
+                  <div className="tj-ref-price">
+                    直近終値（参考）:{' '}
+                    <strong>¥{jpyVal.toLocaleString()}</strong>
+                    {isUS && (
+                      <span className="tj-ref-usd">
+                        　${autoData.lastClose.toFixed(2)} × {USD_JPY_RATE}円/USD
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
               <div className="tj-prefill-grid">
                 <div className="tj-pf-item">
                   <span className="tj-pf-label">方向</span>
@@ -1101,7 +1113,14 @@ function TradeJournalPanel({ preFill, onPreFillConsumed }) {
                 type="number"
                 value={entryPrice}
                 onChange={e => setEntryPrice(e.target.value)}
-                placeholder={autoData?.lastClose != null ? `参考: ¥${autoData.lastClose.toLocaleString()}` : '例: 6200'}
+                placeholder={autoData?.lastClose != null
+                  ? (() => {
+                      const isUS = !autoData.ticker.endsWith('.T')
+                      const jpyVal = isUS ? Math.round(autoData.lastClose * USD_JPY_RATE) : Math.round(autoData.lastClose)
+                      return `参考: ¥${jpyVal.toLocaleString()}`
+                    })()
+                  : '例: 6200'
+                }
               />
             </label>
           </div>

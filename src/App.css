@@ -2558,6 +2558,7 @@ h1 {
   margin-bottom: 8px;
 }
 .tj-ref-price strong { color: #263040; }
+.tj-ref-usd { font-size: 0.73rem; color: #7090a0; }
 
 /* プレフィルグリッド */
 .tj-prefill-grid {
