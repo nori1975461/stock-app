@@ -651,6 +651,7 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
               )
             })}
           </div>
+          <TopRecommendations items={results} onSelectTicker={onSelectTicker} onRecordTrade={onRecordTrade} />
           {topTickers && (
             <button className="btn-select-set" onClick={() => onSelectSet(topTickers)}>
               ▶ 上位銘柄を比較分析する（フォームに入力）
@@ -896,6 +897,8 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
             })}
           </div>
 
+          <TopRecommendations items={results} onSelectTicker={onSelectTicker} onRecordTrade={onRecordTrade} />
+
           {/* セクター別トップ1 */}
           {sectorTops && sectorTops.length > 0 && (
             <details className="screener-sector-tops">
@@ -1040,6 +1043,64 @@ function EntryJudgmentBadge({ p, compact }) {
         <span className="ej-badge-label">{ej.label}</span>
       </div>
       <p className="ej-badge-desc">{ej.desc}</p>
+    </div>
+  )
+}
+
+// ── CT推奨上位2銘柄 ──────────────────────────────────────────────────────────
+const GRADE_ORDER = { STRONG_BUY: 0, OK: 1, CAUTION: 2, PASS: 3, FORBID: 4 }
+
+function TopRecommendations({ items, onSelectTicker, onRecordTrade }) {
+  if (!items || items.length === 0) return null
+
+  const top = [...items]
+    .map(item => ({ ...item, ej: computeEntryJudgment(item.prediction) }))
+    .filter(item => item.ej.grade !== 'FORBID' && item.ej.grade !== 'PASS')
+    .sort((a, b) => {
+      const gd = GRADE_ORDER[a.ej.grade] - GRADE_ORDER[b.ej.grade]
+      if (gd !== 0) return gd
+      return (b.prediction.stableScore ?? 0) - (a.prediction.stableScore ?? 0)
+    })
+    .slice(0, 2)
+
+  if (top.length === 0) return null
+
+  return (
+    <div className="top-reco-panel">
+      <div className="top-reco-title">CT推奨上位{top.length}銘柄</div>
+      <div className="top-reco-list">
+        {top.map((item, i) => {
+          const p = item.prediction
+          return (
+            <div key={item.ticker} className={`top-reco-item ${i === 0 ? 'top-reco-first' : ''}`}>
+              <div className="top-reco-rank">{i === 0 ? '1位' : '2位'}</div>
+              <div className="top-reco-info">
+                <div className="top-reco-ticker">{item.ticker}</div>
+                {item.name && <div className="top-reco-name">{item.name}</div>}
+                <EntryJudgmentBadge p={p} compact />
+              </div>
+              <div className="top-reco-scores">
+                <div className="top-reco-score">安定 {p.stableScore > 0 ? '+' : ''}{p.stableScore}</div>
+                <div className="top-reco-conf">{p.confidence}%</div>
+              </div>
+              <div className="top-reco-btns">
+                <button className="btn-select-ticker" onClick={() => onSelectTicker(item.ticker)}>
+                  詳細 →
+                </button>
+                {onRecordTrade && (
+                  <button
+                    className="btn-tj-record"
+                    title="購入を記録"
+                    onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
+                  >
+                    📝
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

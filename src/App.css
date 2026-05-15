@@ -1609,13 +1609,13 @@ h1 {
   transition: opacity 0.15s;
 }
 .screener-sector-item:hover { opacity: 0.8; }
-.sector-item-up   { background: rgba(95,224,138,0.08); border-color: rgba(95,224,138,0.25); }
-.sector-item-down { background: rgba(255,128,128,0.06); border-color: rgba(255,128,128,0.2); opacity: 0.6; }
-.sector-item-active { border-color: rgba(95,224,138,0.5); }
+.sector-item-up   { background: rgba(70,110,160,0.12); border-color: rgba(70,110,160,0.28); }
+.sector-item-down { background: rgba(160,100,80,0.08); border-color: rgba(160,100,80,0.2); opacity: 0.6; }
+.sector-item-active { border-color: rgba(70,110,160,0.55); }
 
 .sector-item-sector {
   font-size: 0.62rem;
-  color: #80a090;
+  color: #7090b8;
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -1624,11 +1624,11 @@ h1 {
 .sector-item-ticker {
   font-size: 0.82rem;
   font-weight: 800;
-  color: #d0f0e0;
+  color: #b0c8e8;
 }
 .sector-item-name {
   font-size: 0.68rem;
-  color: #90b0a0;
+  color: #88a8c8;
   margin-bottom: 3px;
   white-space: nowrap;
   overflow: hidden;
@@ -2740,6 +2740,63 @@ h1 {
 .tj-phase-text-easy   { color: #1a6030; font-weight: 700; }
 .tj-phase-text-normal { color: #1a3080; font-weight: 700; }
 .tj-phase-text-hard   { color: #802010; font-weight: 700; }
+
+/* ─── CT推奨上位2銘柄 ──────────────────────────────────────── */
+.top-reco-panel {
+  background: linear-gradient(135deg, rgba(139,105,20,0.10) 0%, rgba(100,70,10,0.06) 100%);
+  border: 1.5px solid rgba(180,140,50,0.38);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 12px 0 8px;
+}
+.top-reco-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #8b6914;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.top-reco-list { display: flex; flex-direction: column; gap: 6px; }
+.top-reco-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.52);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(180,140,50,0.18);
+}
+.top-reco-first {
+  border-color: rgba(180,140,50,0.42);
+  background: rgba(255,248,215,0.65);
+}
+.top-reco-rank {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #7a5200;
+  min-width: 24px;
+  text-align: center;
+}
+.top-reco-info { flex: 1; min-width: 0; }
+.top-reco-ticker { font-size: 0.88rem; font-weight: 800; color: #111; }
+.top-reco-name {
+  font-size: 0.70rem;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.top-reco-scores {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 52px;
+}
+.top-reco-score { font-size: 0.78rem; font-weight: 700; color: #333; }
+.top-reco-conf  { font-size: 0.68rem; color: #777; }
+.top-reco-btns  { display: flex; flex-direction: column; gap: 4px; }
 
 /* ─── エントリー判断バッジ ─────────────────────────────────── */
 .ej-badge {
