@@ -11,9 +11,11 @@ const MAX_TICKERS = 10
 
 function fmtPrice(ticker, lastClose) {
   if (lastClose == null) return null
-  return ticker.toUpperCase().endsWith('.T')
-    ? Math.round(lastClose).toLocaleString() + '円'
-    : '$' + lastClose.toFixed(2)
+  if (ticker.toUpperCase().endsWith('.T')) {
+    return Math.round(lastClose).toLocaleString() + '円'
+  }
+  const jpy = Math.round(lastClose * USD_JPY_RATE).toLocaleString()
+  return `$${lastClose.toFixed(2)} → ${jpy}円`
 }
 
 function fmtVol(v) {
