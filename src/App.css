@@ -2740,3 +2740,55 @@ h1 {
 .tj-phase-text-easy   { color: #1a6030; font-weight: 700; }
 .tj-phase-text-normal { color: #1a3080; font-weight: 700; }
 .tj-phase-text-hard   { color: #802010; font-weight: 700; }
+
+/* ─── エントリー判断バッジ ─────────────────────────────────── */
+.ej-badge {
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  border: 2px solid;
+}
+.ej-badge-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.ej-badge-icon { font-size: 1.2rem; }
+.ej-badge-label { font-size: 1rem; font-weight: 700; }
+.ej-badge-desc { font-size: 0.82rem; line-height: 1.45; margin: 0; }
+
+.ej-badge-compact {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-top: 5px;
+  border: 1.5px solid;
+}
+
+/* STRONG_BUY — ゴールド */
+.ej-strong-buy { background: linear-gradient(135deg, #fff9d0 0%, #fffbe8 100%); border-color: #c9940a; color: #7a5200; }
+.ej-strong-buy .ej-badge-label { color: #7a5200; }
+.ej-badge-compact.ej-strong-buy { background: #fff0a0; border-color: #c9940a; color: #7a5200; }
+
+/* OK — グリーン */
+.ej-ok { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f1 100%); border-color: #43a047; color: #1b5e20; }
+.ej-ok .ej-badge-label { color: #1b5e20; }
+.ej-badge-compact.ej-ok { background: #c8e6c9; border-color: #43a047; color: #1b5e20; }
+
+/* CAUTION — アンバー */
+.ej-caution { background: linear-gradient(135deg, #fff8e1 0%, #fffde7 100%); border-color: #ffa000; color: #e65100; }
+.ej-caution .ej-badge-label { color: #e65100; }
+.ej-badge-compact.ej-caution { background: #ffe0b2; border-color: #ffa000; color: #e65100; }
+
+/* PASS — 赤橙 */
+.ej-pass { background: linear-gradient(135deg, #fff3e0 0%, #fff8f0 100%); border-color: #e64a19; color: #bf360c; }
+.ej-pass .ej-badge-label { color: #bf360c; }
+.ej-badge-compact.ej-pass { background: #ffccbc; border-color: #e64a19; color: #bf360c; }
+
+/* FORBID — ダークレッド */
+.ej-forbid { background: linear-gradient(135deg, #fce4ec 0%, #fef0f4 100%); border-color: #b71c1c; color: #b71c1c; }
+.ej-forbid .ej-badge-label { color: #b71c1c; }
+.ej-badge-compact.ej-forbid { background: #ffcdd2; border-color: #b71c1c; color: #b71c1c; }

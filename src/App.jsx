@@ -627,6 +627,7 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
                     </div>
                     <div className="leader-conf">確信度 {p.confidence}%</div>
                     <IndicatorBadges p={p} />
+                    <EntryJudgmentBadge p={p} compact />
                   </div>
                   <div className="leader-item-right">
                     <p className="leader-reason">{item.leaderReason}</p>
@@ -866,6 +867,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                         <span className="screener-conf">確信度 {p.confidence}%</span>
                       </div>
                       <IndicatorBadges p={p} />
+                      <EntryJudgmentBadge p={p} compact />
                       {p.signals && (
                         <div className="screener-signals">
                           {p.signals.slice(0, 2).map((s, si) => (
@@ -962,6 +964,73 @@ function buildTradeData(ticker, sector, name, p) {
     day2ConfirmStatus:     p.day2Confirmation ? p.day2Confirmation.status   : null,
     exitSignal:            p.exitJudgment   ? p.exitJudgment.exitRecommendation : null,
   }
+}
+
+// ── エントリー判断バッジ ──────────────────────────────────────────────────
+function computeEntryJudgment(p) {
+  const exitLevel = p.exitJudgment?.exitLevel ?? 0
+  const isUp      = p.direction === 'UP'
+  const ss        = p.stableScore ?? 0
+  const iv        = p.initialVelocity
+  const d2        = p.day2Confirmation
+  const d2Active  = d2 && d2.status !== 'NO_SIGNAL'
+
+  if (exitLevel === 3) {
+    if (!isUp) return { grade: 'FORBID', label: 'エントリー禁止', icon: '✕', cls: 'ej-forbid',
+      desc: '下降トレンド＋全決済シグナル — エントリーしてはいけません' }
+    return { grade: 'PASS', label: '見送り推奨', icon: '⚠', cls: 'ej-pass',
+      desc: 'EXIT_ALL発動中のUP銘柄 — 機関投資家の分散が始まっている可能性。新規エントリーは見送り推奨' }
+  }
+  if (!isUp) {
+    if (exitLevel >= 2 || ss < -1)
+      return { grade: 'FORBID', label: 'エントリー禁止', icon: '✕', cls: 'ej-forbid',
+        desc: '下降トレンド＋複数の弱気シグナル — CT理論の原則：エントリーしてはいけません' }
+    return { grade: 'CAUTION', label: '慎重に', icon: '△', cls: 'ej-caution',
+      desc: '下降トレンド中 — 反転を確認してからエントリーを検討してください' }
+  }
+  if (exitLevel >= 1)
+    return { grade: 'CAUTION', label: '慎重に', icon: '△', cls: 'ej-caution',
+      desc: 'エグジットシグナル点灯中のUP銘柄 — 既存保有者は手仕舞い段階。新規エントリーは慎重に' }
+  if (ss < 0)
+    return { grade: 'CAUTION', label: '慎重に', icon: '△', cls: 'ej-caution',
+      desc: '安定スコアがマイナス — 銘柄品質がCT基準を下回っています。見送りか小ロットで様子見を' }
+  if (d2Active && d2.day1Dir > 0 && !d2.isConfirmed)
+    return { grade: 'CAUTION', label: '慎重に', icon: '△', cls: 'ej-caution',
+      desc: '2日目確認否定 — 上昇初動が翌日に否定されました。再度の上昇シグナルを待ってください' }
+
+  // CT理論最強シグナル：2条件がともに揃う場合のみ【買いを強く推奨】
+  // 条件1：規律可能性の高い銘柄を出来高と方向性が揃うタイミングで買う
+  const cond1 = (p.disciplinaryPct ?? 0) >= 70 && (p.relativeVolume ?? 0) > 1.2
+  // 条件2：初速超高速かつ2日目確認済み
+  const cond2 = iv?.level === 'VERY_HIGH' && iv?.isAligned && iv?.currentDir > 0
+             && d2Active && d2.isConfirmed && d2.day1Dir > 0
+
+  if (cond1 && cond2)
+    return { grade: 'STRONG_BUY', label: '買いを強く推奨', icon: '★', cls: 'ej-strong-buy',
+      desc: '規律可能性高＋出来高整合＋初速超高速＋2日目確認 — CT理論が定義する最強シグナルが全て揃っています' }
+
+  return { grade: 'OK', label: 'エントリー可', icon: '◎', cls: 'ej-ok',
+    desc: 'UPトレンド＋保有継続シグナル＋安定スコア正 — CT理論の基本エントリー条件を満たしています' }
+}
+
+function EntryJudgmentBadge({ p, compact }) {
+  const ej = computeEntryJudgment(p)
+  if (compact) {
+    return (
+      <span className={`ej-badge-compact ${ej.cls}`}>
+        {ej.icon} {ej.label}
+      </span>
+    )
+  }
+  return (
+    <div className={`ej-badge ${ej.cls}`}>
+      <div className="ej-badge-header">
+        <span className="ej-badge-icon">{ej.icon}</span>
+        <span className="ej-badge-label">{ej.label}</span>
+      </div>
+      <p className="ej-badge-desc">{ej.desc}</p>
+    </div>
+  )
 }
 
 // ── トレード記録パネル ──────────────────────────────────────────────────────
@@ -1390,6 +1459,8 @@ function DetailCard({ item, onClose }) {
         </div>
       </div>
 
+      <EntryJudgmentBadge p={p} />
+
       <CTMetrics p={p} />
 
       <ExitPanel p={p} />
@@ -1786,6 +1857,8 @@ export default function App() {
             <span className="label">{result.direction === 'UP' ? '上昇傾向' : '下降傾向'}</span>
             <span className="confidence">確信度 {result.confidence}%</span>
           </div>
+
+          <EntryJudgmentBadge p={result} />
 
           <CTMetrics p={result} />
 
