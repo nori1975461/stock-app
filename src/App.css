@@ -1552,6 +1552,32 @@ h1 {
   margin-bottom: 8px;
 }
 
+/* ─── スクリーニング結果 折りたたみ ─────────────── */
+.screener-results-section {
+  margin-top: 4px;
+}
+
+.screener-results-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #5a4010;
+  cursor: pointer;
+  padding: 8px 12px;
+  background: rgba(139,105,20,0.07);
+  border-radius: 8px;
+  border: 1px solid rgba(139,105,20,0.18);
+  list-style: none;
+  user-select: none;
+  margin-bottom: 4px;
+}
+
+.screener-results-toggle::-webkit-details-marker { display: none; }
+.screener-results-toggle::before { content: '▼ '; font-size: 0.7rem; color: #8b6914; }
+details:not([open]) .screener-results-toggle::before { content: '▶ '; }
+
 /* 監視バッジ・監視アイテム */
 .screener-watch-badge {
   font-size: 0.62rem;

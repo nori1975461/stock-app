@@ -902,64 +902,69 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
             </div>
           )}
 
-          <div className="screener-results">
-            {results.map((item, i) => {
-              const p        = item.prediction
-              const isActive = p.direction === 'UP' && p.stableScore >= ACTIVE_MIN_STABLE
-              return (
-                <Fragment key={item.ticker}>
-                  {thresholdIdx > 0 && i === thresholdIdx && (
-                    <div className="screener-threshold-line">
-                      ── アクティブ候補ライン（以下は監視のみ・エントリー不推奨） ──
-                    </div>
-                  )}
-                  <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''}`}>
-                    <div className="screener-rank">{RANK_LABELS[i]}</div>
-                    <div className="screener-body">
-                      <div className="screener-name-row">
-                        <span className="screener-ticker">{item.ticker}</span>
-                        <span className="screener-name">{item.name}</span>
-                        <span className="screener-sector">{item.sector}</span>
-                        {!isActive && <span className="screener-watch-badge">監視</span>}
+          <details className="screener-results-section" open>
+            <summary className="screener-results-toggle">
+              スキャン結果 上位10銘柄
+            </summary>
+            <div className="screener-results">
+              {results.map((item, i) => {
+                const p        = item.prediction
+                const isActive = p.direction === 'UP' && p.stableScore >= ACTIVE_MIN_STABLE
+                return (
+                  <Fragment key={item.ticker}>
+                    {thresholdIdx > 0 && i === thresholdIdx && (
+                      <div className="screener-threshold-line">
+                        ── アクティブ候補ライン（以下は監視のみ・エントリー不推奨） ──
                       </div>
-                      <div className="screener-score-row">
-                        <span className={`screener-dir ${p.direction === 'UP' ? 'up' : 'down'}`}>
-                          {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
-                        </span>
-                        <span className="screener-score-val">
-                          安定スコア {p.stableScore > 0 ? '+' : ''}{p.stableScore}
-                        </span>
-                        <span className="screener-conf">確信度 {p.confidence}%</span>
-                      </div>
-                      <IndicatorBadges p={p} />
-                      <EntryJudgmentBadge p={p} compact />
-                      {p.signals && (
-                        <div className="screener-signals">
-                          {p.signals.slice(0, 2).map((s, si) => (
-                            <div key={si} className="screener-signal-line">・{s}</div>
-                          ))}
+                    )}
+                    <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''}`}>
+                      <div className="screener-rank">{RANK_LABELS[i]}</div>
+                      <div className="screener-body">
+                        <div className="screener-name-row">
+                          <span className="screener-ticker">{item.ticker}</span>
+                          <span className="screener-name">{item.name}</span>
+                          <span className="screener-sector">{item.sector}</span>
+                          {!isActive && <span className="screener-watch-badge">監視</span>}
                         </div>
-                      )}
-                    </div>
-                    <div className="screener-item-btns">
-                      <button className="btn-select-ticker" onClick={() => onSelectTicker(item.ticker)}>
-                        詳細 →
-                      </button>
-                      {onRecordTrade && (
-                        <button
-                          className="btn-tj-record"
-                          title="購入を記録"
-                          onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
-                        >
-                          📝
+                        <div className="screener-score-row">
+                          <span className={`screener-dir ${p.direction === 'UP' ? 'up' : 'down'}`}>
+                            {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
+                          </span>
+                          <span className="screener-score-val">
+                            安定スコア {p.stableScore > 0 ? '+' : ''}{p.stableScore}
+                          </span>
+                          <span className="screener-conf">確信度 {p.confidence}%</span>
+                        </div>
+                        <IndicatorBadges p={p} />
+                        <EntryJudgmentBadge p={p} compact />
+                        {p.signals && (
+                          <div className="screener-signals">
+                            {p.signals.slice(0, 2).map((s, si) => (
+                              <div key={si} className="screener-signal-line">・{s}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="screener-item-btns">
+                        <button className="btn-select-ticker" onClick={() => onSelectTicker(item.ticker)}>
+                          詳細 →
                         </button>
-                      )}
+                        {onRecordTrade && (
+                          <button
+                            className="btn-tj-record"
+                            title="購入を記録"
+                            onClick={() => onRecordTrade(buildTradeData(item.ticker, item.sector, item.name, p))}
+                          >
+                            📝
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Fragment>
-              )
-            })}
-          </div>
+                  </Fragment>
+                )
+              })}
+            </div>
+          </details>
 
           <TopRecommendations items={results} onSelectTicker={onSelectTicker} onRecordTrade={onRecordTrade} />
 
