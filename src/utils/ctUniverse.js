@@ -42,6 +42,7 @@ export const CT_UNIVERSE = [
   { ticker: '9613.T', name: 'NTTデータグループ',       sector: 'IT・情報サービス' },
   { ticker: '6098.T', name: 'リクルートHD',            sector: 'IT・情報サービス' },
   { ticker: '4751.T', name: 'サイバーエージェント',    sector: 'IT・情報サービス' },
+  { ticker: '4307.T', name: '野村総合研究所',          sector: 'IT・情報サービス' },
 
   // ━━ 精密機器（マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '7741.T', name: 'HOYA',                    sector: '精密機器' },
@@ -54,6 +55,7 @@ export const CT_UNIVERSE = [
   { ticker: '6367.T', name: 'ダイキン工業',            sector: '機械' },
   { ticker: '6301.T', name: 'コマツ',                  sector: '機械' },
   { ticker: '6326.T', name: 'クボタ',                  sector: '機械' },
+  { ticker: '6954.T', name: 'ファナック',              sector: '機械' },
 
   // ━━ 重工業（防衛・宇宙需要）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '7011.T', name: '三菱重工業',              sector: '重工業' },
@@ -99,6 +101,7 @@ export const CT_UNIVERSE = [
   // ━━ 自動車（EV・自動運転・次世代モビリティ）━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '7203.T', name: 'トヨタ自動車',            sector: '自動車' },
   { ticker: '7267.T', name: 'ホンダ',                  sector: '自動車' },
+  { ticker: '6902.T', name: 'デンソー',                sector: '自動車' },
 
   // ━━ 不動産（金利感応・相場転換の先行指標）━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '8802.T', name: '三菱地所',                sector: '不動産' },
@@ -108,12 +111,14 @@ export const CT_UNIVERSE = [
   { ticker: 'AMD',    name: 'AMD',                     sector: '米国半導体' },
   { ticker: 'AVGO',   name: 'Broadcom',                sector: '米国半導体' },
   { ticker: 'TSM',    name: 'TSMC',                    sector: '米国半導体' },
+  { ticker: 'ARM',    name: 'ARM Holdings',            sector: '米国半導体' },
   { ticker: 'AAPL',   name: 'Apple',                   sector: '米国テック' },
   { ticker: 'MSFT',   name: 'Microsoft',               sector: '米国テック' },
   { ticker: 'META',   name: 'Meta',                    sector: '米国テック' },
   { ticker: 'GOOGL',  name: 'Alphabet',                sector: '米国テック' },
   { ticker: 'AMZN',   name: 'Amazon',                  sector: '米国テック' },
   { ticker: 'TSLA',   name: 'Tesla',                   sector: '米国テック' },
+  { ticker: 'ORCL',   name: 'Oracle',                  sector: '米国テック' },
 ]
 
 // ── 先導株リスト（市場を牽引する銘柄・CT理論研究に基づく 2026年5月調査）────
