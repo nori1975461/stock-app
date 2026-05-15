@@ -584,13 +584,19 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
     setIsAnalyzing(false)
   }
 
-  // アクティブ先導株：UP + 安定スコア+2以上 + 分散シグナルなし（HOLD）のみ
-  const LEADER_ACTIVE_MIN_STABLE = 2
+  // アクティブ先導株の4条件（CT理論準拠）:
+  //   1. 上昇トレンド
+  //   2. 分散シグナルなし（exitLevel=0）
+  //   3. OBV上昇（機関投資家の買いが継続中）← CT理論の中核
+  //   4. 品質閾値（leaderRankに応じて S:1 / A:2 / B:3）
+  const LEADER_STABLE_THRESHOLD = { S: 1, A: 2, B: 3 }
   const activeResults  = results ? results.filter(r => {
-    const p = r.prediction
+    const p         = r.prediction
+    const threshold = LEADER_STABLE_THRESHOLD[r.leaderRank] ?? 2
     return p.direction === 'UP'
-      && p.stableScore >= LEADER_ACTIVE_MIN_STABLE
       && (p.exitJudgment?.exitLevel ?? 0) === 0
+      && p.obvTrend === 'UP'
+      && p.stableScore >= threshold
   }) : []
   const dormantResults = results ? results.filter(r => !activeResults.includes(r)) : []
 
@@ -658,7 +664,8 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
       <div className="leader-intro">
         <p>
           CT理論では「先導株（市場全体を先行して動かす銘柄）を特定し、その流れに乗る」ことが最重要戦略です。
-          先導株は全体の<strong>2〜3%</strong>しか存在せず、<strong>上昇トレンド＋安定スコア+2以上＋分散シグナルなし</strong>の3条件を満たす銘柄のみを「アクティブ先導株」として表示します。
+          先導株は全体の<strong>2〜3%</strong>しか存在せず、以下の<strong>4条件を全て満たす</strong>銘柄のみを「アクティブ先導株」として表示します：
+          ①上昇トレンド ②分散シグナルなし ③OBV上昇（機関投資家の買い継続） ④品質スコア（★★★確定:+1以上 / ★★有力:+2以上 / ★候補:+3以上）
         </p>
       </div>
 
