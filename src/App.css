@@ -2773,15 +2773,15 @@ h1 {
 .ej-strong-buy .ej-badge-label { color: #7a5200; }
 .ej-badge-compact.ej-strong-buy { background: #fff0a0; border-color: #c9940a; color: #7a5200; }
 
-/* OK — グリーン */
-.ej-ok { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f1 100%); border-color: #43a047; color: #1b5e20; }
-.ej-ok .ej-badge-label { color: #1b5e20; }
-.ej-badge-compact.ej-ok { background: #c8e6c9; border-color: #43a047; color: #1b5e20; }
+/* OK — アンバー */
+.ej-ok { background: linear-gradient(135deg, #fff8e1 0%, #fffde7 100%); border-color: #ffa000; color: #e65100; }
+.ej-ok .ej-badge-label { color: #e65100; }
+.ej-badge-compact.ej-ok { background: #ffe0b2; border-color: #ffa000; color: #e65100; }
 
-/* CAUTION — アンバー */
-.ej-caution { background: linear-gradient(135deg, #fff8e1 0%, #fffde7 100%); border-color: #ffa000; color: #e65100; }
-.ej-caution .ej-badge-label { color: #e65100; }
-.ej-badge-compact.ej-caution { background: #ffe0b2; border-color: #ffa000; color: #e65100; }
+/* CAUTION — グリーン */
+.ej-caution { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f1 100%); border-color: #43a047; color: #1b5e20; }
+.ej-caution .ej-badge-label { color: #1b5e20; }
+.ej-badge-compact.ej-caution { background: #c8e6c9; border-color: #43a047; color: #1b5e20; }
 
 /* PASS — 赤橙 */
 .ej-pass { background: linear-gradient(135deg, #fff3e0 0%, #fff8f0 100%); border-color: #e64a19; color: #bf360c; }
