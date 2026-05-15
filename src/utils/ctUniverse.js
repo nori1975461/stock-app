@@ -126,10 +126,11 @@ export const CT_LEADERS = [
     ticker: '6857.T',
     name: 'アドバンテスト',
     sector: '電子部品・半導体',
-    leaderRank: 'S',
+    leaderRank: 'A',
     leaderReason:
-      'NVIDIA向けAI半導体の最終検査を担う「日本のNVIDIA」。NVDAの受注増がそのまま売上に直結する構造。' +
-      '日本株市場における半導体セクターの先導株として機能しており、東証プライムの方向性を示す指標銘柄。',
+      'NVIDIA向けAI半導体の最終検査を担う「日本のNVIDIA」的存在。NVDAの受注増がそのまま売上に直結する構造。' +
+      'ただし年間騰落率+126%/+91%級の超高ボラティリティにより、相場バロメーターには不適。' +
+      'トレンドが明確に確立した局面での参入に限定すること。A-rankとして先導株候補に残す。',
   },
   {
     ticker: '8035.T',
@@ -215,6 +216,12 @@ export const SECTOR_BAROMETERS = [
   { ticker: '5803.T', name: 'フジクラ',              sector: '非鉄金属',         region: 'JP' },
   { ticker: '7974.T', name: '任天堂',                sector: 'エンタメ・ゲーム',  region: 'JP' },
   { ticker: '4519.T', name: '中外製薬',              sector: '医薬品',            region: 'JP' },
+  // 主要セクターの第2銘柄（セクター平均スコアの精度向上用）
+  { ticker: '6146.T', name: 'ディスコ',              sector: '電子部品・半導体',  region: 'JP' },
+  { ticker: '7013.T', name: 'IHI',                   sector: '重工業',            region: 'JP' },
+  { ticker: '5802.T', name: '住友電気工業',            sector: '非鉄金属',          region: 'JP' },
+  { ticker: '8316.T', name: '三井住友FG',              sector: '銀行',              region: 'JP' },
+  { ticker: '8058.T', name: '三菱商事',               sector: '総合商社',           region: 'JP' },
 ]
 
 // 先導ランクの表示ラベル

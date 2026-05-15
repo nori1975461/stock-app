@@ -352,17 +352,27 @@ function MarketPhasePanel({ gasUrl, onSelectTicker }) {
     const usWithPred  = usStocks.filter(s => s.prediction)
     const usUpCount   = usWithPred.filter(s => s.prediction.direction === 'UP').length
 
-    // 日本セクター：安定スコア降順にソート
-    const jpStocks = live.filter(s => s.region === 'JP' && s.prediction)
-    jpStocks.sort((a, b) => b.prediction.stableScore - a.prediction.stableScore)
+    // 日本セクター：同セクターの銘柄を集約して平均スコアを計算
+    const sectorMap = {}
+    for (const s of live.filter(s2 => s2.region === 'JP' && s2.prediction)) {
+      if (!sectorMap[s.sector]) sectorMap[s.sector] = []
+      sectorMap[s.sector].push(s)
+    }
 
-    const jpTotal   = jpStocks.length
-    const jpUpCount = jpStocks.filter(s => s.prediction.direction === 'UP').length
+    const jpSectors = Object.entries(sectorMap).map(([sector, stocks]) => {
+      const avgScore  = stocks.reduce((sum, s) => sum + s.prediction.stableScore, 0) / stocks.length
+      const upCount   = stocks.filter(s => s.prediction.direction === 'UP').length
+      const direction = upCount > stocks.length / 2 ? 'UP' : 'DOWN'
+      const sorted    = [...stocks].sort((a, b) => b.prediction.stableScore - a.prediction.stableScore)
+      return { sector, stocks: sorted, avgScore: +avgScore.toFixed(1), direction, upCount, totalCount: stocks.length, best: sorted[0] }
+    }).sort((a, b) => b.avgScore - a.avgScore)
 
-    // S-rank候補：最強セクターの代表銘柄（上昇かつ安定スコア+2以上が条件）
-    const sRankCandidate = jpStocks.find(s =>
-      s.prediction.direction === 'UP' && s.prediction.stableScore >= 2
-    ) || null
+    const jpTotal   = jpSectors.length
+    const jpUpCount = jpSectors.filter(s => s.direction === 'UP').length
+
+    // S-rank候補：最強セクターの最高スコア個別銘柄（UP かつ セクター平均+2以上）
+    const sRankSector    = jpSectors.find(s => s.direction === 'UP' && s.avgScore >= 2)
+    const sRankCandidate = sRankSector?.best || null
 
     // 相場フェーズ判定
     const usStrong = usUpCount >= 2
@@ -379,7 +389,7 @@ function MarketPhasePanel({ gasUrl, onSelectTicker }) {
       overallDesc  = '混合相場：一部セクターのみ参加可。スコアの高い先導株を厳選してください。'
     }
 
-    setResults({ usStocks, jpStocks, usUpCount, usWithPred, jpUpCount, jpTotal, overallPhase, overallDesc, sRankCandidate })
+    setResults({ usStocks, jpSectors, usUpCount, usWithPred, jpUpCount, jpTotal, overallPhase, overallDesc, sRankCandidate })
     setIsAnalyzing(false)
   }
 
@@ -462,24 +472,32 @@ function MarketPhasePanel({ gasUrl, onSelectTicker }) {
             <span className="phase-section-sub">（安定スコア順）</span>
           </div>
           <div className="phase-jp-list">
-            {results.jpStocks.map((s, i) => {
-              const p = s.prediction
-              const isStrong = i < 3 && p.direction === 'UP' && p.stableScore >= 2
+            {results.jpSectors.map((sec, i) => {
+              const isStrong = i < 3 && sec.direction === 'UP' && sec.avgScore >= 2
               return (
-                <div key={s.ticker} className={`phase-jp-item ${isStrong ? 'phase-jp-strong' : ''} ${p.direction === 'UP' ? 'phase-jp-up' : 'phase-jp-down'}`}>
+                <div key={sec.sector} className={`phase-jp-item ${isStrong ? 'phase-jp-strong' : ''} ${sec.direction === 'UP' ? 'phase-jp-up' : 'phase-jp-down'}`}>
                   <div className={`phase-jp-rank ${i === 0 ? 'phase-jp-rank-gold' : i === 1 ? 'phase-jp-rank-silver' : i === 2 ? 'phase-jp-rank-bronze' : ''}`}>
                     {i + 1}
                   </div>
                   <div className="phase-jp-info">
-                    <div className="phase-jp-sector">{s.sector}</div>
+                    <div className="phase-jp-sector">{sec.sector}</div>
                     <div className="phase-jp-ticker-name">
-                      <span className="phase-jp-ticker">{s.ticker}</span>
-                      <span className="phase-jp-name">{s.name}</span>
+                      {sec.stocks.map((s, si) => (
+                        <span key={s.ticker} className={si === 0 ? 'phase-jp-ticker' : 'phase-jp-ticker-sub'}>
+                          {s.ticker}
+                          {sec.stocks.length > 1 && (
+                            <span className={s.prediction.stableScore >= 0 ? 'phase-jp-sub-score-up' : 'phase-jp-sub-score-down'}>
+                              {s.prediction.stableScore > 0 ? '+' : ''}{s.prediction.stableScore}
+                            </span>
+                          )}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                  <div className={`phase-jp-scores ${p.direction === 'UP' ? 'phase-jp-up-color' : 'phase-jp-down-color'}`}>
-                    <span className="phase-jp-arrow">{p.direction === 'UP' ? '▲' : '▼'}</span>
-                    <span className="phase-jp-score-val">{p.stableScore > 0 ? '+' : ''}{p.stableScore}</span>
+                  <div className={`phase-jp-scores ${sec.direction === 'UP' ? 'phase-jp-up-color' : 'phase-jp-down-color'}`}>
+                    <span className="phase-jp-arrow">{sec.direction === 'UP' ? '▲' : '▼'}</span>
+                    <span className="phase-jp-score-val">{sec.avgScore > 0 ? '+' : ''}{sec.avgScore}</span>
+                    {sec.totalCount > 1 && <span className="phase-jp-avg-label">平均</span>}
                   </div>
                   {isStrong && <div className="phase-jp-star">強</div>}
                 </div>
@@ -770,6 +788,208 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet }) {
             ※ スキャン結果はCT理論スコアの瞬間値です。投資判断の最終責任はご自身にあります。
           </p>
         </>
+      )}
+    </div>
+  )
+}
+
+// ── トレード記録パネル ──────────────────────────────────────────────────────
+function TradeJournalPanel() {
+  const today = () => new Date().toISOString().slice(0, 10)
+
+  const [trades, setTrades] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('ct_trades') || '[]') } catch { return [] }
+  })
+  const [showForm, setShowForm]   = useState(false)
+  const [exitId, setExitId]       = useState(null)
+  const [form, setForm]           = useState({
+    ticker: '', entryDate: today(), entryPrice: '',
+    stableScore: '', direction: 'UP', marketPhase: 'NORMAL', note: ''
+  })
+  const [exitForm, setExitForm]   = useState({ exitDate: today(), exitPrice: '', exitReason: '自分の判断' })
+
+  const save = (next) => { setTrades(next); localStorage.setItem('ct_trades', JSON.stringify(next)) }
+
+  const addTrade = () => {
+    if (!form.ticker.trim() || !form.entryPrice) return
+    save([{
+      id: Date.now().toString(), ...form,
+      ticker: form.ticker.trim().toUpperCase(),
+      entryPrice: +form.entryPrice,
+      stableScore: form.stableScore !== '' ? +form.stableScore : null,
+      exitDate: null, exitPrice: null, exitReason: null
+    }, ...trades])
+    setShowForm(false)
+    setForm({ ticker: '', entryDate: today(), entryPrice: '', stableScore: '', direction: 'UP', marketPhase: 'NORMAL', note: '' })
+  }
+
+  const recordExit = (id) => {
+    if (!exitForm.exitPrice) return
+    save(trades.map(t => t.id === id ? { ...t, exitDate: exitForm.exitDate, exitPrice: +exitForm.exitPrice, exitReason: exitForm.exitReason } : t))
+    setExitId(null)
+    setExitForm({ exitDate: today(), exitPrice: '', exitReason: '自分の判断' })
+  }
+
+  const deleteTrade = (id) => { if (window.confirm('このトレード記録を削除しますか？')) save(trades.filter(t => t.id !== id)) }
+
+  const pnl  = (t) => t.exitPrice && t.entryPrice ? ((t.exitPrice - t.entryPrice) / t.entryPrice * 100).toFixed(1) : null
+  const days = (t) => t.exitDate  && t.entryDate  ? Math.round((new Date(t.exitDate) - new Date(t.entryDate)) / 86400000) : null
+
+  const exportCSV = () => {
+    const hdr  = ['購入日','ティッカー','購入価格','安定スコア','方向','相場環境','メモ','売却日','売却価格','損益%','保有日数','売却理由']
+    const rows = trades.map(t => [
+      t.entryDate, t.ticker, t.entryPrice, t.stableScore ?? '', t.direction, t.marketPhase, t.note || '',
+      t.exitDate || '', t.exitPrice || '', pnl(t) ? pnl(t) + '%' : '', days(t) ?? '', t.exitReason || ''
+    ])
+    const csv  = [hdr, ...rows].map(r => r.join(',')).join('\n')
+    const url  = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }))
+    const a    = Object.assign(document.createElement('a'), { href: url, download: `ct_trades_${today()}.csv` })
+    a.click(); URL.revokeObjectURL(url)
+  }
+
+  const holding = trades.filter(t => !t.exitDate)
+  const closed  = trades.filter(t =>  t.exitDate)
+  const wins    = closed.filter(t => +pnl(t) > 0).length
+  const winRate = closed.length > 0 ? Math.round(wins / closed.length * 100) : null
+
+  const phaseClass = { EASY: 'tj-phase-easy', NORMAL: 'tj-phase-normal', HARD: 'tj-phase-hard' }
+
+  return (
+    <div className="card trade-journal-panel">
+      <div className="tj-header">
+        <div>
+          <div className="tj-title">トレード記録</div>
+          <div className="tj-subtitle">CT理論に基づく売買履歴・損益管理</div>
+        </div>
+        <div className="tj-header-btns">
+          <button className="btn-tj-add" onClick={() => setShowForm(v => !v)}>
+            {showForm ? '▲ 閉じる' : '＋ 新規記録'}
+          </button>
+          {trades.length > 0 && (
+            <button className="btn-tj-csv" onClick={exportCSV}>CSV出力</button>
+          )}
+        </div>
+      </div>
+
+      {/* サマリー */}
+      {trades.length > 0 && (
+        <div className="tj-summary">
+          <div className="tj-stat"><span>総取引数</span><strong>{trades.length}</strong></div>
+          <div className="tj-stat"><span>保有中</span><strong>{holding.length}</strong></div>
+          <div className="tj-stat"><span>完了</span><strong>{closed.length}</strong></div>
+          {winRate !== null && (
+            <div className="tj-stat"><span>勝率</span><strong className={winRate >= 50 ? 'val-up' : 'val-down'}>{winRate}%</strong></div>
+          )}
+        </div>
+      )}
+
+      {/* 新規記録フォーム */}
+      {showForm && (
+        <div className="tj-form">
+          <div className="tj-form-title">エントリー記録</div>
+          <div className="tj-form-grid">
+            <label>ティッカー
+              <input value={form.ticker} onChange={e => setForm(f => ({...f, ticker: e.target.value.toUpperCase()}))} placeholder="例: 5803.T" />
+            </label>
+            <label>購入日
+              <input type="date" value={form.entryDate} onChange={e => setForm(f => ({...f, entryDate: e.target.value}))} />
+            </label>
+            <label>購入価格（円）
+              <input type="number" value={form.entryPrice} onChange={e => setForm(f => ({...f, entryPrice: e.target.value}))} placeholder="例: 6200" />
+            </label>
+            <label>安定スコア
+              <input type="number" value={form.stableScore} onChange={e => setForm(f => ({...f, stableScore: e.target.value}))} placeholder="例: +7" min="-10" max="10" />
+            </label>
+            <label>方向判定
+              <select value={form.direction} onChange={e => setForm(f => ({...f, direction: e.target.value}))}>
+                <option value="UP">▲ UP</option>
+                <option value="DOWN">▼ DOWN</option>
+              </select>
+            </label>
+            <label>相場環境
+              <select value={form.marketPhase} onChange={e => setForm(f => ({...f, marketPhase: e.target.value}))}>
+                <option value="EASY">EASY相場</option>
+                <option value="NORMAL">NORMAL相場</option>
+                <option value="HARD">HARD相場</option>
+              </select>
+            </label>
+          </div>
+          <label className="tj-note-label">メモ（任意）
+            <input value={form.note} onChange={e => setForm(f => ({...f, note: e.target.value}))} placeholder="例: OBV強い、停滞シグナルあり" />
+          </label>
+          <div className="tj-form-actions">
+            <button className="btn-tj-save" onClick={addTrade} disabled={!form.ticker || !form.entryPrice}>記録する</button>
+            <button className="btn-tj-cancel" onClick={() => setShowForm(false)}>キャンセル</button>
+          </div>
+        </div>
+      )}
+
+      {/* 保有中 */}
+      {holding.length > 0 && (
+        <div className="tj-section">
+          <div className="tj-section-title">保有中 ({holding.length}件)</div>
+          {holding.map(t => (
+            <div key={t.id} className="tj-trade-item tj-holding">
+              <div className="tj-trade-left">
+                <span className="tj-trade-ticker">{t.ticker}</span>
+                <span className={`tj-trade-phase ${phaseClass[t.marketPhase] || ''}`}>{t.marketPhase}</span>
+                <span className={`tj-trade-dir ${t.direction === 'UP' ? 'val-up' : 'val-down'}`}>{t.direction === 'UP' ? '▲' : '▼'}</span>
+                {t.stableScore !== null && <span className="tj-trade-score">安定{t.stableScore > 0 ? '+' : ''}{t.stableScore}</span>}
+              </div>
+              <div className="tj-trade-right">
+                <span className="tj-trade-meta">¥{t.entryPrice.toLocaleString()}　{t.entryDate}</span>
+                {exitId === t.id ? (
+                  <div className="tj-exit-form">
+                    <input type="date" value={exitForm.exitDate} onChange={e => setExitForm(f => ({...f, exitDate: e.target.value}))} />
+                    <input type="number" value={exitForm.exitPrice} onChange={e => setExitForm(f => ({...f, exitPrice: e.target.value}))} placeholder="売却価格" />
+                    <select value={exitForm.exitReason} onChange={e => setExitForm(f => ({...f, exitReason: e.target.value}))}>
+                      <option>自分の判断</option>
+                      <option>分散エグジット発動</option>
+                      <option>損切り</option>
+                    </select>
+                    <button className="btn-tj-exit-ok" onClick={() => recordExit(t.id)}>確定</button>
+                    <button className="btn-tj-cancel" onClick={() => setExitId(null)}>×</button>
+                  </div>
+                ) : (
+                  <div className="tj-trade-actions">
+                    <button className="btn-tj-exit" onClick={() => { setExitId(t.id); setExitForm({ exitDate: today(), exitPrice: '', exitReason: '自分の判断' }) }}>手仕舞い記録</button>
+                    <button className="btn-tj-del" onClick={() => deleteTrade(t.id)}>削除</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 完了トレード */}
+      {closed.length > 0 && (
+        <div className="tj-section">
+          <div className="tj-section-title">完了 ({closed.length}件)</div>
+          {closed.map(t => {
+            const p = pnl(t); const d = days(t)
+            return (
+              <div key={t.id} className={`tj-trade-item ${+p > 0 ? 'tj-win' : 'tj-loss'}`}>
+                <div className="tj-trade-left">
+                  <span className="tj-trade-ticker">{t.ticker}</span>
+                  <span className={`tj-trade-phase ${phaseClass[t.marketPhase] || ''}`}>{t.marketPhase}</span>
+                  <span className={`tj-pnl ${+p > 0 ? 'val-up' : 'val-down'}`}>{p > 0 ? '+' : ''}{p}%</span>
+                </div>
+                <div className="tj-trade-right">
+                  <span className="tj-trade-meta">
+                    {t.entryDate}→{t.exitDate}　{d !== null ? `${d}日` : ''}　{t.exitReason}
+                  </span>
+                  {t.note && <span className="tj-trade-note">{t.note}</span>}
+                  <button className="btn-tj-del" onClick={() => deleteTrade(t.id)}>削除</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {trades.length === 0 && !showForm && (
+        <div className="tj-empty">「＋ 新規記録」から最初のトレードを記録してください。</div>
       )}
     </div>
   )
@@ -1182,6 +1402,9 @@ export default function App() {
         onSelectTicker={handleSelectTicker}
         onSelectSet={handleSelectSet}
       />
+
+      {/* ── トレード記録パネル ── */}
+      <TradeJournalPanel />
 
       {/* ── 単体分析結果 ── */}
       {result && (
