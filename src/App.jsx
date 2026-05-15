@@ -9,6 +9,13 @@ import { CT_UNIVERSE, CT_LEADERS, LEADER_RANK_LABEL, LEADER_RANK_CLASS, SECTOR_B
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位', '6位', '7位', '8位', '9位', '10位']
 const MAX_TICKERS = 10
 
+function fmtPrice(ticker, lastClose) {
+  if (lastClose == null) return null
+  return ticker.toUpperCase().endsWith('.T')
+    ? Math.round(lastClose).toLocaleString() + '円'
+    : '$' + lastClose.toFixed(2)
+}
+
 function fmtVol(v) {
   if (!v || v <= 0) return '-'
   if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M'
@@ -625,6 +632,9 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
             </span>
           </div>
           <div className="leader-conf">確信度 {p.confidence}%</div>
+          {fmtPrice(item.ticker, p.lastClose) && (
+            <div className="item-last-price">{fmtPrice(item.ticker, p.lastClose)}</div>
+          )}
           <IndicatorBadges p={p} />
           {isActive && <EntryJudgmentBadge p={p} compact />}
         </div>
@@ -934,6 +944,9 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                             安定スコア {p.stableScore > 0 ? '+' : ''}{p.stableScore}
                           </span>
                           <span className="screener-conf">確信度 {p.confidence}%</span>
+                          {fmtPrice(item.ticker, p.lastClose) && (
+                            <span className="item-last-price">{fmtPrice(item.ticker, p.lastClose)}</span>
+                          )}
                         </div>
                         <IndicatorBadges p={p} />
                         <EntryJudgmentBadge p={p} compact />
@@ -2133,6 +2146,9 @@ export default function App() {
                           <div className="rank-meta">
                             <span>確信度 {item.prediction.confidence}%</span>
                             <span>スコア {item.prediction.score > 0 ? '+' : ''}{item.prediction.score}</span>
+                            {fmtPrice(item.ticker, item.prediction.lastClose) && (
+                              <span className="item-last-price">{fmtPrice(item.ticker, item.prediction.lastClose)}</span>
+                            )}
                           </div>
                           <IndicatorBadges p={item.prediction} />
                         </>
