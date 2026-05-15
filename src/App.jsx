@@ -154,7 +154,11 @@ function IndicatorBadges({ p }) {
           d2.isConfirmed && d2.day1Dir < 0  ? 'bear' :
           !d2.isConfirmed && d2.day1Dir > 0 ? 'bear' : 'bull'
         }`}>
-          2日目{d2.isConfirmed ? '✓' : '✗'}
+          2日目{
+            d2.isConfirmed && d2.day1Dir > 0  ? '✓' :
+            d2.isConfirmed && d2.day1Dir < 0  ? '✗' :
+            !d2.isConfirmed && d2.day1Dir > 0 ? '✗' : '△'
+          }
         </span>
       )}
     </div>
