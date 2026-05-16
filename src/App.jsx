@@ -206,11 +206,9 @@ function ScoreSparklineMini({ series, trend }) {
   const color = trend === 'RISING' ? '#27ae60' : trend === 'FALLING' ? '#e74c4c' : '#aaa'
   const data  = series.map(s => ({ v: s.stableScore }))
   return (
-    <ResponsiveContainer width={72} height={28}>
-      <LineChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-        <Line type="monotone" dataKey="v" stroke={color} dot={false} strokeWidth={1.5} connectNulls />
-      </LineChart>
-    </ResponsiveContainer>
+    <LineChart width={72} height={28} data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+      <Line type="monotone" dataKey="v" stroke={color} dot={false} strokeWidth={1.5} connectNulls />
+    </LineChart>
   )
 }
 

@@ -3058,11 +3058,14 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 6px;
 }
 
 .screener-trend-label {
-  font-size: 0.78rem;
+  font-size: 0.80rem;
   font-weight: 700;
   white-space: nowrap;
 }
