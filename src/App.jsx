@@ -937,21 +937,43 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
 
       {results && (
         <>
-          <div className="screener-summary">
-            {scannedCount}銘柄スキャン完了 —
-            {thresholdIdx < 0
-              ? ` 全${results.length}銘柄がアクティブ候補（UP＋安定スコア+${ACTIVE_MIN_STABLE}以上）`
-              : thresholdIdx === 0
-                ? ` アクティブ候補なし（HARD相場の可能性）`
-                : ` アクティブ候補 ${thresholdIdx}銘柄 ／ 監視 ${results.length - thresholdIdx}銘柄`
-            }
-          </div>
-
-          {thresholdIdx === 0 && (
-            <div className="screener-threshold-warn">
-              ⚠ UP＋安定スコア+{ACTIVE_MIN_STABLE}以上を満たす銘柄がトップ10にありません。次元1で相場環境を確認してください。
-            </div>
-          )}
+          {(() => {
+            const leaderTickers = new Set(CT_LEADERS.map(l => l.ticker))
+            const leaderInResults = results.filter(item => leaderTickers.has(item.ticker))
+            return (
+              <>
+                <div className="screener-summary">
+                  {scannedCount}銘柄スキャン完了 —
+                  {thresholdIdx < 0
+                    ? ` 全${results.length}銘柄がアクティブ候補（UP＋安定スコア+${ACTIVE_MIN_STABLE}以上）`
+                    : thresholdIdx === 0
+                      ? ` アクティブ候補なし（HARD相場の可能性）`
+                      : ` アクティブ候補 ${thresholdIdx}銘柄 ／ 監視 ${results.length - thresholdIdx}銘柄`
+                  }
+                  {leaderInResults.length > 0 && (
+                    <span className="screener-leader-count">
+                      　★ 先導株 {leaderInResults.length}銘柄ランクイン
+                    </span>
+                  )}
+                </div>
+                {leaderInResults.length > 0 && (
+                  <div className="screener-convergence-alert">
+                    <span className="screener-convergence-icon">★</span>
+                    <span className="screener-convergence-text">
+                      両次元一致シグナル —
+                      先導株 <strong>{leaderInResults.map(r => r.name || r.ticker).join('・')}</strong> が次元3にランクイン。
+                      次元2・次元3が同時に示す銘柄は最優先で注目すること。
+                    </span>
+                  </div>
+                )}
+                {thresholdIdx === 0 && (
+                  <div className="screener-threshold-warn">
+                    ⚠ UP＋安定スコア+{ACTIVE_MIN_STABLE}以上を満たす銘柄がトップ10にありません。次元1で相場環境を確認してください。
+                  </div>
+                )}
+              </>
+            )
+          })()}
 
           <details className="screener-results-section" open>
             <summary className="screener-results-toggle">
@@ -961,6 +983,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
               {results.map((item, i) => {
                 const p        = item.prediction
                 const isActive = p.direction === 'UP' && p.stableScore >= ACTIVE_MIN_STABLE
+                const isLeader = CT_LEADERS.some(l => l.ticker === item.ticker)
                 return (
                   <Fragment key={item.ticker}>
                     {thresholdIdx > 0 && i === thresholdIdx && (
@@ -968,13 +991,14 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                         ── アクティブ候補ライン（以下は監視のみ・エントリー不推奨） ──
                       </div>
                     )}
-                    <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''}`}>
+                    <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''} ${isLeader ? 'screener-item-leader' : ''}`}>
                       <div className="screener-rank">{RANK_LABELS[i]}</div>
                       <div className="screener-body">
                         <div className="screener-name-row">
                           <span className="screener-ticker">{item.ticker}</span>
                           <span className="screener-name">{item.name}</span>
                           <span className="screener-sector">{item.sector}</span>
+                          {isLeader && <span className="screener-leader-badge">★ 先導株</span>}
                           {!isActive && <span className="screener-watch-badge">監視</span>}
                         </div>
                         <div className="screener-score-row">

@@ -3081,3 +3081,51 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* ─── 両次元一致シグナル ─────────────────────────── */
+.screener-leader-count {
+  color: #b8860b;
+  font-weight: 700;
+}
+
+.screener-convergence-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #fffbea 0%, #fff8dc 100%);
+  border: 1.5px solid #d4a017;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(212,160,23,0.15);
+}
+
+.screener-convergence-icon {
+  font-size: 1.1rem;
+  color: #b8860b;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.screener-convergence-text {
+  font-size: 0.82rem;
+  color: #6b4c00;
+  line-height: 1.5;
+}
+
+.screener-leader-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  background: linear-gradient(135deg, #d4a017 0%, #f0c040 100%);
+  color: #3a2800;
+  font-size: 0.70rem;
+  font-weight: 800;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.screener-item-leader {
+  border-left: 3px solid #d4a017;
+  background: linear-gradient(160deg, #fffdf5 0%, #fff8e0 100%);
+}
