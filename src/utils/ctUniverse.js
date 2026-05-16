@@ -233,26 +233,46 @@ export const SECTOR_BAROMETERS = [
   { ticker: 'SPY',    name: 'S&P500 ETF',        sector: '米国市場全体',     region: 'US' },
   { ticker: 'QQQ',    name: 'NASDAQ-100 ETF',     sector: '米国ハイテク',     region: 'US' },
   { ticker: 'SOXX',   name: '半導体ETF',           sector: '米国半導体',      region: 'US' },
-  // 日本セクター代表（各業種1銘柄：最安定・最流動性の代表を選定）
+  // 日本セクター代表（各業種2銘柄：需要ドライバーが異なる補完的ペアで選定）
+  // 電子部品・半導体：製造装置（広域）× 精密切断（後工程）
   { ticker: '8035.T', name: '東京エレクトロン',    sector: '電子部品・半導体', region: 'JP' },
-  { ticker: '6501.T', name: '日立製作所',           sector: '電気機器',        region: 'JP' },
+  { ticker: '6146.T', name: 'ディスコ',            sector: '電子部品・半導体', region: 'JP' },
+  // 電気機器：社会インフラ × 消費・エンタメ
+  { ticker: '6501.T', name: '日立製作所',           sector: '電気機器',         region: 'JP' },
+  { ticker: '6758.T', name: 'ソニーグループ',        sector: '電気機器',         region: 'JP' },
+  // IT・情報サービス：B2C人材・消費 × B2C法人IT
   { ticker: '6098.T', name: 'リクルートHD',         sector: 'IT・情報サービス', region: 'JP' },
-  { ticker: '7741.T', name: 'HOYA',                sector: '精密機器',         region: 'JP' },
-  { ticker: '6273.T', name: 'SMC',                 sector: '機械',             region: 'JP' },
-  { ticker: '7011.T', name: '三菱重工業',           sector: '重工業',           region: 'JP' },
-  { ticker: '4063.T', name: '信越化学工業',          sector: '化学',             region: 'JP' },
-  { ticker: '8001.T', name: '伊藤忠商事',            sector: '総合商社',         region: 'JP' },
-  { ticker: '8306.T', name: '三菱UFJ FG',           sector: '銀行',             region: 'JP' },
-  { ticker: '9433.T', name: 'KDDI',                 sector: '通信',             region: 'JP' },
-  { ticker: '5803.T', name: 'フジクラ',              sector: '非鉄金属',         region: 'JP' },
-  { ticker: '7974.T', name: '任天堂',                sector: 'エンタメ・ゲーム',  region: 'JP' },
-  { ticker: '4519.T', name: '中外製薬',              sector: '医薬品',            region: 'JP' },
-  // 主要セクターの第2銘柄（セクター平均スコアの精度向上用）
-  { ticker: '6146.T', name: 'ディスコ',              sector: '電子部品・半導体',  region: 'JP' },
-  { ticker: '7013.T', name: 'IHI',                   sector: '重工業',            region: 'JP' },
-  { ticker: '5802.T', name: '住友電気工業',            sector: '非鉄金属',          region: 'JP' },
-  { ticker: '8316.T', name: '三井住友FG',              sector: '銀行',              region: 'JP' },
-  { ticker: '8058.T', name: '三菱商事',               sector: '総合商社',           region: 'JP' },
+  { ticker: '9613.T', name: 'NTTデータグループ',    sector: 'IT・情報サービス', region: 'JP' },
+  // 精密機器：光学・半導体材料 × FA・ロボット
+  { ticker: '7741.T', name: 'HOYA',                sector: '精密機器',          region: 'JP' },
+  { ticker: '6954.T', name: 'ファナック',            sector: '精密機器',          region: 'JP' },
+  // 機械：空圧・制御（国内工場向け）× 空調（グローバル需要）
+  { ticker: '6273.T', name: 'SMC',                 sector: '機械',              region: 'JP' },
+  { ticker: '6367.T', name: 'ダイキン工業',          sector: '機械',              region: 'JP' },
+  // 重工業：総合重工（防衛・エネルギー） × 航空エンジン・宇宙
+  { ticker: '7011.T', name: '三菱重工業',           sector: '重工業',            region: 'JP' },
+  { ticker: '7013.T', name: 'IHI',                 sector: '重工業',            region: 'JP' },
+  // 化学：半導体材料 × 医療・イメージング多角化
+  { ticker: '4063.T', name: '信越化学工業',          sector: '化学',              region: 'JP' },
+  { ticker: '4901.T', name: '富士フイルムHD',        sector: '化学',              region: 'JP' },
+  // 総合商社：消費向け × 資源向け
+  { ticker: '8001.T', name: '伊藤忠商事',            sector: '総合商社',          region: 'JP' },
+  { ticker: '8058.T', name: '三菱商事',              sector: '総合商社',          region: 'JP' },
+  // 銀行：3大メガバンクから2行
+  { ticker: '8306.T', name: '三菱UFJ FG',           sector: '銀行',              region: 'JP' },
+  { ticker: '8316.T', name: '三井住友FG',            sector: '銀行',              region: 'JP' },
+  // 通信：モバイル+法人 × インフラ+海外
+  { ticker: '9433.T', name: 'KDDI',                 sector: '通信',              region: 'JP' },
+  { ticker: '9432.T', name: 'NTT',                  sector: '通信',              region: 'JP' },
+  // 非鉄金属：電線・光ファイバー × 採掘・製錬（需要ドライバーが異なる）
+  { ticker: '5803.T', name: 'フジクラ',              sector: '非鉄金属',          region: 'JP' },
+  { ticker: '5713.T', name: '住友金属鉱山',           sector: '非鉄金属',          region: 'JP' },
+  // エンタメ・ゲーム：デジタル娯楽 × リアル体験消費
+  { ticker: '7974.T', name: '任天堂',                sector: 'エンタメ・ゲーム',   region: 'JP' },
+  { ticker: '4661.T', name: 'オリエンタルランド',     sector: 'エンタメ・ゲーム',   region: 'JP' },
+  // 医薬品：がん・抗体薬（ロシュ系） × グローバル抗体薬（異なる疾患領域）
+  { ticker: '4519.T', name: '中外製薬',              sector: '医薬品',             region: 'JP' },
+  { ticker: '4568.T', name: '第一三共',              sector: '医薬品',             region: 'JP' },
 ]
 
 // 先導ランクの表示ラベル
