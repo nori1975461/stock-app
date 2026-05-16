@@ -3021,3 +3021,48 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
 .leader-results-dormant {
   opacity: 0.75;
 }
+
+/* ─── スコアスパークライン（詳細ビュー） ──────────────── */
+.score-sparkline-wrap {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.score-sparkline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.score-sparkline-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.score-sparkline-delta {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ssd-rising  { color: #27ae60; }
+.ssd-falling { color: #e74c4c; }
+.ssd-flat    { color: #888; }
+
+/* ─── スコアスパークライン（スクリーナーカード） ──────── */
+.screener-sparkline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.screener-trend-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}

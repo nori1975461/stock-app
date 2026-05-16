@@ -357,6 +357,77 @@ function calcExitJudgment(closes, volumes, prices) {
   }
 }
 
+function calcStableScoreOnly(prices) {
+  if (prices.length < 30) return null
+  const closes  = prices.map(p => p.close)
+  const volumes = prices.map(p => p.volume || 0)
+  const hasVol  = volumes.some(v => v > 0)
+  const n       = closes.length
+  let s = 0
+
+  const rv = hasVol ? (calcRelativeVolumeStable(volumes, 3, 20) ?? calcRelativeVolume(volumes, 20)) : null
+  if (rv !== null) {
+    const up = n >= 2 && closes[n - 1] > closes[n - 2]
+    if (rv > 2.5)             s -= 2
+    else if (rv > 1.3 && up)  s += 2
+    else if (rv > 1.3 && !up) s -= 1
+  }
+
+  const disc = calcDisciplinaryPossibility(closes, 15)
+  if (disc !== null) {
+    if (disc >= 80)      s += 2
+    else if (disc >= 60) s += 1
+    else if (disc < 40)  s -= 2
+  }
+
+  if (hasVol) {
+    const obv = calcOBVTrend(closes, volumes, 15)
+    if (obv === 'UP')        s += 1
+    else if (obv === 'DOWN') s -= 1
+  }
+
+  if (hasVol && detectStagnation(closes, volumes, 5)) s += 1
+
+  const mag = calcMagnetEffect(closes, 90)
+  if (mag.status === 'NEW_HIGH' || mag.status === 'BREAKOUT') s += 2
+  else if (mag.status === 'RESISTANCE')                        s -= 1
+
+  const td = countTrendDays(closes)
+  if (td >= 5)       s += 1
+  else if (td <= -5) s -= 1
+
+  const c = analyzeCandlePattern(prices, 10)
+  if (c.total >= 6) {
+    if (c.bullishCount >= 7)      s += 1
+    else if (c.bearishCount >= 7) s -= 1
+  }
+
+  return s
+}
+
+function calcStableScoreSeries(allPrices, days = 20) {
+  const n      = allPrices.length
+  const result = []
+  for (let i = n - days; i < n; i++) {
+    if (i < 0) continue
+    const score = i >= 90 ? calcStableScoreOnly(allPrices.slice(0, i + 1)) : null
+    result.push({ date: allPrices[i].date, stableScore: score })
+  }
+  return result
+}
+
+function calcScoreTrend(series) {
+  const valid = series.filter(s => s.stableScore !== null)
+  if (valid.length < 6) return { scoreTrend: 'FLAT', scoreDelta: null }
+  const mid        = Math.floor(valid.length / 2)
+  const firstAvg   = valid.slice(0, mid).reduce((s, v) => s + v.stableScore, 0) / mid
+  const secondAvg  = valid.slice(mid).reduce((s, v)  => s + v.stableScore, 0) / (valid.length - mid)
+  const halfDiff   = secondAvg - firstAvg
+  const scoreDelta = valid[valid.length - 1].stableScore - valid[0].stableScore
+  const scoreTrend = halfDiff > 1 ? 'RISING' : halfDiff < -1 ? 'FALLING' : 'FLAT'
+  return { scoreTrend, scoreDelta }
+}
+
 // macroAdjust は受け入れるが無視（CT理論はセクターマクロをスコアに含めない）
 export function predict(allPrices, days, macroAdjust = null) {
   const n        = allPrices.length
@@ -602,6 +673,9 @@ export function predict(allPrices, days, macroAdjust = null) {
 
   const exitJudgment = calcExitJudgment(closes, volumes, allPrices)
 
+  const stableScoreSeries          = calcStableScoreSeries(allPrices, 20)
+  const { scoreTrend, scoreDelta } = calcScoreTrend(stableScoreSeries)
+
   return {
     direction,
     confidence,
@@ -622,5 +696,8 @@ export function predict(allPrices, days, macroAdjust = null) {
     signals,
     chartData,
     forecast,
+    stableScoreSeries,
+    scoreTrend,
+    scoreDelta,
   }
 }

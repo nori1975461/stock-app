@@ -174,6 +174,46 @@ function IndicatorBadges({ p }) {
   )
 }
 
+function ScoreSparkline({ series, trend, delta }) {
+  const valid = (series ?? []).filter(s => s.stableScore !== null)
+  if (valid.length < 5) return null
+  const color = trend === 'RISING' ? '#27ae60' : trend === 'FALLING' ? '#e74c4c' : '#888'
+  const data  = series.map(s => ({ date: s.date.slice(5), v: s.stableScore }))
+  const trendLabel = trend === 'RISING' ? '▲ 上昇中' : trend === 'FALLING' ? '▼ 下降中' : '→ 横ばい'
+  return (
+    <div className="score-sparkline-wrap">
+      <div className="score-sparkline-header">
+        <span className="score-sparkline-label">安定スコア推移（過去20日）</span>
+        <span className={`score-sparkline-delta ssd-${trend?.toLowerCase()}`}>
+          {trendLabel}{delta !== null ? `　${delta > 0 ? '+' : ''}${delta}pt` : ''}
+        </span>
+      </div>
+      <ResponsiveContainer width="100%" height={80}>
+        <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+          <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+          <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10 }} width={24} />
+          <Tooltip formatter={v => v !== null ? [`${v > 0 ? '+' : ''}${v}pt`, '安定スコア'] : ['-', '安定スコア']} />
+          <Line type="monotone" dataKey="v" stroke={color} dot={false} strokeWidth={2} connectNulls />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function ScoreSparklineMini({ series, trend }) {
+  const valid = (series ?? []).filter(s => s.stableScore !== null)
+  if (valid.length < 5) return null
+  const color = trend === 'RISING' ? '#27ae60' : trend === 'FALLING' ? '#e74c4c' : '#aaa'
+  const data  = series.map(s => ({ v: s.stableScore }))
+  return (
+    <ResponsiveContainer width={72} height={28}>
+      <LineChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+        <Line type="monotone" dataKey="v" stroke={color} dot={false} strokeWidth={1.5} connectNulls />
+      </LineChart>
+    </ResponsiveContainer>
+  )
+}
+
 function CTMetrics({ p }) {
   const magDist   = p.magnetEffect?.distancePct
   const magStatus = p.magnetEffect?.status
@@ -271,6 +311,7 @@ function CTMetrics({ p }) {
           </div>
         </div>
       )}
+      <ScoreSparkline series={p.stableScoreSeries} trend={p.scoreTrend} delta={p.scoreDelta} />
     </>
   )
 }
@@ -957,6 +998,15 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                             {p.signals.slice(0, 2).map((s, si) => (
                               <div key={si} className="screener-signal-line">・{s}</div>
                             ))}
+                          </div>
+                        )}
+                        {p.stableScoreSeries && (
+                          <div className="screener-sparkline-row">
+                            <ScoreSparklineMini series={p.stableScoreSeries} trend={p.scoreTrend} />
+                            <span className={`screener-trend-label ssd-${p.scoreTrend?.toLowerCase()}`}>
+                              {p.scoreTrend === 'RISING' ? '▲ 上昇中' : p.scoreTrend === 'FALLING' ? '▼ 下降中' : '→ 横ばい'}
+                              {p.scoreDelta !== null ? `　${p.scoreDelta > 0 ? '+' : ''}${p.scoreDelta}pt` : ''}
+                            </span>
                           </div>
                         )}
                       </div>
