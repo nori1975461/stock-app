@@ -410,7 +410,8 @@ function calcStableScoreSeries(allPrices, days = 20) {
   const result = []
   for (let i = n - days; i < n; i++) {
     if (i < 0) continue
-    const score = i >= 90 ? calcStableScoreOnly(allPrices.slice(0, i + 1)) : null
+    // calcStableScoreOnly が prices.length < 30 の場合に null を返すため、ここでの条件判定は不要
+    const score = calcStableScoreOnly(allPrices.slice(0, i + 1))
     result.push({ date: allPrices[i].date, stableScore: score })
   }
   return result

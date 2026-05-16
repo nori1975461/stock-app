@@ -999,12 +999,15 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                           </div>
                         )}
                         {p.stableScoreSeries && (
-                          <div className="screener-sparkline-row">
-                            <ScoreSparklineMini series={p.stableScoreSeries} trend={p.scoreTrend} />
-                            <span className={`screener-trend-label ssd-${p.scoreTrend?.toLowerCase()}`}>
-                              {p.scoreTrend === 'RISING' ? '▲ 上昇中' : p.scoreTrend === 'FALLING' ? '▼ 下降中' : '→ 横ばい'}
-                              {p.scoreDelta !== null ? `　${p.scoreDelta > 0 ? '+' : ''}${p.scoreDelta}pt` : ''}
-                            </span>
+                          <div className="screener-sparkline-wrap">
+                            <div className="screener-sparkline-title">安定スコア推移（過去20日）</div>
+                            <div className="screener-sparkline-row">
+                              <ScoreSparklineMini series={p.stableScoreSeries} trend={p.scoreTrend} />
+                              <span className={`screener-trend-label ssd-${p.scoreTrend?.toLowerCase()}`}>
+                                {p.scoreTrend === 'RISING' ? '▲ 上昇中' : p.scoreTrend === 'FALLING' ? '▼ 下降中' : '→ 横ばい'}
+                                {p.scoreDelta !== null ? `　${p.scoreDelta > 0 ? '+' : ''}${p.scoreDelta}pt` : ''}
+                              </span>
+                            </div>
                           </div>
                         )}
                       </div>

@@ -1,5 +1,5 @@
 async function fetchViaGAS(symbol, gasUrl) {
-  const url = `${gasUrl}?ticker=${encodeURIComponent(symbol)}&days=120`
+  const url = `${gasUrl}?ticker=${encodeURIComponent(symbol)}&days=180`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`GASエラー: ${res.status}`)
   const json = await res.json()

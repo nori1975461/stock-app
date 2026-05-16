@@ -3054,18 +3054,30 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
 .ssd-flat    { color: #888; }
 
 /* ─── スコアスパークライン（スクリーナーカード） ──────── */
+.screener-sparkline-wrap {
+  margin-top: 10px;
+  padding: 6px 10px 8px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.07);
+}
+
+.screener-sparkline-title {
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: #777;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
 .screener-sparkline-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 4px 8px;
-  background: rgba(0,0,0,0.04);
-  border-radius: 6px;
+  gap: 10px;
 }
 
 .screener-trend-label {
-  font-size: 0.80rem;
+  font-size: 0.82rem;
   font-weight: 700;
   white-space: nowrap;
 }
