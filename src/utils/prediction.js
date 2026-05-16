@@ -419,12 +419,42 @@ function calcStableScoreSeries(allPrices, days = 20) {
 function calcScoreTrend(series) {
   const valid = series.filter(s => s.stableScore !== null)
   if (valid.length < 6) return { scoreTrend: 'FLAT', scoreDelta: null }
-  const mid        = Math.floor(valid.length / 2)
-  const firstAvg   = valid.slice(0, mid).reduce((s, v) => s + v.stableScore, 0) / mid
-  const secondAvg  = valid.slice(mid).reduce((s, v)  => s + v.stableScore, 0) / (valid.length - mid)
-  const halfDiff   = secondAvg - firstAvg
-  const scoreDelta = valid[valid.length - 1].stableScore - valid[0].stableScore
-  const scoreTrend = halfDiff > 1 ? 'RISING' : halfDiff < -1 ? 'FALLING' : 'FLAT'
+
+  const n      = valid.length
+  const scores = valid.map(v => v.stableScore)
+
+  // 1. 線形回帰スロープ（全有効日をカバー、ノイズに最強）
+  const meanX = (n - 1) / 2
+  const meanY = scores.reduce((s, v) => s + v, 0) / n
+  let num = 0, den = 0
+  scores.forEach((y, i) => {
+    num += (i - meanX) * (y - meanY)
+    den += (i - meanX) * (i - meanX)
+  })
+  const slope = den > 0 ? num / den : 0
+
+  // 2. ネット変化量（区間全体の最低変化幅を保証）
+  const scoreDelta = scores[n - 1] - scores[0]
+
+  // 3. 直近モメンタム veto（直近5日 vs その前5日）
+  //    トレンドが実際に今も継続しているかを確認。逆行なら FLAT へ格下げ
+  const recentN    = Math.min(5, Math.floor(n / 2))
+  const recentAvg  = scores.slice(-recentN).reduce((s, v) => s + v, 0) / recentN
+  const prevAvg    = scores.slice(-recentN * 2, -recentN).reduce((s, v) => s + v, 0) / recentN
+  const recentMomentum = recentAvg - prevAvg
+
+  // slope > 0.10 pt/day ≈ 20日で+2pt（指標1つ分）の線形上昇
+  // |scoreDelta| >= 2 ≈ ノイズ域（±1pt）を超えた実質的な変化
+  // recentMomentum >= -0.5 ≈ 直近が強く逆行していなければ許容
+  let scoreTrend
+  if (slope >= 0.10 && scoreDelta >= 2 && recentMomentum >= -0.5) {
+    scoreTrend = 'RISING'
+  } else if (slope <= -0.10 && scoreDelta <= -2 && recentMomentum <= 0.5) {
+    scoreTrend = 'FALLING'
+  } else {
+    scoreTrend = 'FLAT'
+  }
+
   return { scoreTrend, scoreDelta }
 }
 
