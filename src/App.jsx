@@ -174,6 +174,32 @@ function IndicatorBadges({ p }) {
   )
 }
 
+// CT理論：先導株の現在の活動状態を判定
+// LEADING=今牽引中 / BASING=蓄積中（モナリザ）/ WATCHING=様子見 / WARNING=警戒
+function calcLeaderActivityState(p) {
+  if (p.direction === 'DOWN' && p.stableScore <= -2 && p.obvTrend === 'DOWN') return 'WARNING'
+  if (
+    p.direction === 'UP' &&
+    p.stableScore >= 3 &&
+    p.obvTrend === 'UP' &&
+    (p.relativeVolume > 1.3 || p.magnetEffect?.status === 'NEW_HIGH' || p.magnetEffect?.status === 'BREAKOUT')
+  ) return 'LEADING'
+  if (p.isStagnating && p.stableScore >= 0) return 'BASING'
+  return 'WATCHING'
+}
+
+function LeaderActivityBadge({ p }) {
+  const state = calcLeaderActivityState(p)
+  const config = {
+    LEADING:  { cls: 'lab-leading',  label: '🟢 先導中' },
+    BASING:   { cls: 'lab-basing',   label: '🟡 蓄積中（モナリザ）' },
+    WATCHING: { cls: 'lab-watching', label: '⚪ 様子見' },
+    WARNING:  { cls: 'lab-warning',  label: '🔴 警戒' },
+  }
+  const { cls, label } = config[state]
+  return <span className={`leader-activity-badge ${cls}`}>{label}</span>
+}
+
 function ScoreSparkline({ series, trend, delta }) {
   const valid = (series ?? []).filter(s => s.stableScore !== null)
   if (valid.length < 5) return null
@@ -664,6 +690,7 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
           <div className="leader-sector-tag">{item.sector}</div>
         </div>
         <div className="leader-item-center">
+          <LeaderActivityBadge p={p} />
           <div className={`leader-direction ${p.direction === 'UP' ? 'up' : 'down'}`}>
             {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
           </div>
@@ -999,6 +1026,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                           <span className="screener-name">{item.name}</span>
                           <span className="screener-sector">{item.sector}</span>
                           {isLeader && <span className="screener-leader-badge">★ 先導株</span>}
+                          {isLeader && <LeaderActivityBadge p={p} />}
                           {!isActive && <span className="screener-watch-badge">監視</span>}
                         </div>
                         <div className="screener-score-row">

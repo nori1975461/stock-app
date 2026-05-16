@@ -3129,3 +3129,38 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
   border-left: 3px solid #d4a017;
   background: linear-gradient(160deg, #fffdf5 0%, #fff8e0 100%);
 }
+
+/* ─── 先導株 活動状態バッジ ─────────────────────────── */
+.leader-activity-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+
+.lab-leading {
+  background: #e6f9ee;
+  color: #1a7a3c;
+  border: 1px solid #82d4a0;
+}
+
+.lab-basing {
+  background: #fff8dc;
+  color: #7a5200;
+  border: 1px solid #d4a017;
+}
+
+.lab-watching {
+  background: #f0f0f0;
+  color: #666;
+  border: 1px solid #ccc;
+}
+
+.lab-warning {
+  background: #fdecea;
+  color: #b71c1c;
+  border: 1px solid #e57373;
+}
