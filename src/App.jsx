@@ -188,6 +188,19 @@ function calcLeaderActivityState(p) {
   return 'WATCHING'
 }
 
+// Phase B: 先導株品質スコア（0〜5点）
+// 長期的にリーダーとして機能しているかを定量評価
+// 2点以下 → ⚠ 要見直し
+function calcLeaderQualityScore(p) {
+  let q = 0
+  if (p.obvTrend === 'UP')                                                              q += 1
+  if (p.direction === 'UP')                                                             q += 1
+  if (p.magnetEffect?.status === 'NEW_HIGH' || p.magnetEffect?.status === 'BREAKOUT')  q += 1
+  if (p.stableScore >= 2)                                                               q += 1
+  if (p.scoreTrend === 'RISING')                                                        q += 1
+  return q
+}
+
 function LeaderActivityBadge({ p }) {
   const state = calcLeaderActivityState(p)
   const config = {
@@ -677,10 +690,14 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
   const topTickers = activeResults.length > 0 ? activeResults.map(r => r.ticker).join(',') : ''
 
   const renderLeaderItem = (item, i, isActive) => {
-    const p = item.prediction
-    const isTop = isActive && i === 0
+    const p            = item.prediction
+    const isTop        = isActive && i === 0
+    const actState     = calcLeaderActivityState(p)
+    const qualityScore = calcLeaderQualityScore(p)
+    const needsReview  = qualityScore <= 1
+    const isBasing     = actState === 'BASING'
     return (
-      <div key={item.ticker} className={`leader-item ${isTop ? 'leader-item-top' : ''} ${!isActive ? 'leader-item-dormant' : ''}`}>
+      <div key={item.ticker} className={`leader-item ${isTop ? 'leader-item-top' : ''} ${!isActive ? 'leader-item-dormant' : ''} ${isBasing ? 'leader-item-basing' : ''}`}>
         <div className="leader-item-left">
           <div className={`leader-rank-badge ${LEADER_RANK_CLASS[item.leaderRank]}`}>
             {LEADER_RANK_LABEL[item.leaderRank]}
@@ -688,9 +705,15 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
           <div className="leader-ticker">{item.ticker}</div>
           <div className="leader-name">{item.name}</div>
           <div className="leader-sector-tag">{item.sector}</div>
+          {needsReview && (
+            <div className="leader-review-flag">⚠ 要見直し</div>
+          )}
         </div>
         <div className="leader-item-center">
           <LeaderActivityBadge p={p} />
+          {isBasing && (
+            <div className="leader-basing-note">次の大相場の前兆 — 注目</div>
+          )}
           <div className={`leader-direction ${p.direction === 'UP' ? 'up' : 'down'}`}>
             {p.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
           </div>
@@ -703,6 +726,9 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
           {fmtPrice(item.ticker, p.lastClose) && (
             <div className="item-last-price">{fmtPrice(item.ticker, p.lastClose)}</div>
           )}
+          <div className="leader-quality-score">
+            品質スコア {'★'.repeat(qualityScore)}{'☆'.repeat(5 - qualityScore)}
+          </div>
           <IndicatorBadges p={p} />
           {isActive && <EntryJudgmentBadge p={p} compact />}
         </div>
@@ -749,8 +775,23 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
 
       {error && <div className="nikkei-error">{error}</div>}
 
-      {results && (
+      {results && (() => {
+          const stateCounts = { LEADING: 0, BASING: 0, WATCHING: 0, WARNING: 0 }
+          const reviewCount = results.filter(item => calcLeaderQualityScore(item.prediction) <= 1).length
+          results.forEach(item => { stateCounts[calcLeaderActivityState(item.prediction)]++ })
+          return (
         <>
+          {/* Phase A-2: 集計サマリー */}
+          <div className="leader-state-summary">
+            <span className="lss-item lss-leading">🟢 先導中 {stateCounts.LEADING}</span>
+            <span className="lss-item lss-basing">🟡 蓄積中 {stateCounts.BASING}</span>
+            <span className="lss-item lss-watching">⚪ 様子見 {stateCounts.WATCHING}</span>
+            <span className="lss-item lss-warning">🔴 警戒 {stateCounts.WARNING}</span>
+            {reviewCount > 0 && (
+              <span className="lss-item lss-review">⚠ 要見直し {reviewCount}銘柄</span>
+            )}
+          </div>
+
           {/* アクティブカウンター */}
           <div className="leader-active-count">
             <span className={activeResults.length > 0 ? 'leader-count-active' : 'leader-count-zero'}>
@@ -803,7 +844,8 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
             ※ 先導株リストは2026年5月調査時点。市場環境の変化により随時更新が必要です。
           </p>
         </>
-      )}
+          )
+        })()}
     </div>
   )
 }

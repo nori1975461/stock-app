@@ -3164,3 +3164,66 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
   color: #b71c1c;
   border: 1px solid #e57373;
 }
+
+/* ─── Phase A-2: 集計サマリー ────────────────────────── */
+.leader-state-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0,0,0,0.07);
+}
+
+.lss-item {
+  font-size: 0.80rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+.lss-leading  { background: #e6f9ee; color: #1a7a3c; border: 1px solid #82d4a0; }
+.lss-basing   { background: #fff8dc; color: #7a5200; border: 1px solid #d4a017; }
+.lss-watching { background: #f0f0f0; color: #555;    border: 1px solid #ccc; }
+.lss-warning  { background: #fdecea; color: #b71c1c; border: 1px solid #e57373; }
+.lss-review   { background: #fff3e0; color: #e65100; border: 1px solid #ffb74d; }
+
+/* ─── Phase A-3: 蓄積中（モナリザ）特別強調 ─────────── */
+.leader-item-basing {
+  border-left: 3px solid #d4a017;
+  background: linear-gradient(160deg, #fffdf0 0%, #fff9e0 100%);
+}
+
+.leader-basing-note {
+  font-size: 0.72rem;
+  color: #7a5200;
+  font-weight: 700;
+  background: #fff3cd;
+  border: 1px solid #d4a017;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-bottom: 4px;
+  display: inline-block;
+}
+
+/* ─── Phase B: 品質スコア・要見直し ─────────────────── */
+.leader-quality-score {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+.leader-review-flag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e65100;
+  background: #fff3e0;
+  border: 1px solid #ffb74d;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-top: 4px;
+  display: inline-block;
+}
