@@ -95,6 +95,25 @@ git push origin main
 3. `git commit -m "..."` でコミット
 4. `git push origin main` でGitHubへプッシュ
 
+## 動作確認・デプロイルール
+
+**実装確認はローカル（`npm run dev`）ではなく、GitHub Pages へのデプロイで行う。**
+
+コード変更後の手順：
+
+```bash
+git add <変更ファイル>
+git commit -m "変更内容"
+git push origin main
+npm run deploy
+```
+
+- `npm run deploy` を実行すると自動でビルド → GitHub Pages へ公開される
+- 公開URL: https://nori1975461.github.io/stock-app
+- デプロイ後1〜2分で反映される
+- このURLはどの端末・ブラウザからでもアクセス可能（ローカルサーバー不要）
+- `npm run dev` はデバッグが必要な場合のみ使用する
+
 ## CLEAR TRADE理論（CT理論）実装原則
 
 **このアプリはCT理論（Mr.K）に基づく。MA/RSI/MACD/ボリンジャー等の従来指標はスコアに使用しない。**
