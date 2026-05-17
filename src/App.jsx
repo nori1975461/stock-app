@@ -647,9 +647,13 @@ function MarketPhasePanel({ gasUrl, onSelectTicker, onPhaseResolved }) {
 
 // ── 先導株パネル ──────────────────────────────────────────────────────────────
 function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [results, setResults]         = useState(null)
-  const [error, setError]             = useState(null)
+  const [isAnalyzing, setIsAnalyzing]             = useState(false)
+  const [results, setResults]                     = useState(null)
+  const [error, setError]                         = useState(null)
+  const [showReplaceMode, setShowReplaceMode]     = useState(false)
+  const [isCandidateScanning, setIsCandidateScanning] = useState(false)
+  const [candidateResults, setCandidateResults]   = useState(null)
+  const [candidateError, setCandidateError]       = useState(null)
 
   const run = async () => {
     if (!gasUrl) { setError('GAS URLを入力してください。'); return }
@@ -669,6 +673,35 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
     live.sort((a, b) => b.prediction.stableScore - a.prediction.stableScore)
     setResults(live)
     setIsAnalyzing(false)
+  }
+
+  const runCandidateScan = async () => {
+    if (!gasUrl) { setCandidateError('GAS URLを入力してください。'); return }
+    setIsCandidateScanning(true); setCandidateError(null); setCandidateResults(null)
+    const CBATCH = 8
+    const all = []
+    for (let i = 0; i < CT_UNIVERSE.length; i += CBATCH) {
+      const batch = CT_UNIVERSE.slice(i, i + CBATCH)
+      const settled = await Promise.allSettled(
+        batch.map(s => fetchStockData(s.ticker, { gasUrl, apiKey: '' }))
+      )
+      settled.forEach((r, j) => {
+        const s = batch[j]
+        if (r.status === 'fulfilled' && r.value.prices.length >= 20) {
+          const p            = predict(r.value.prices, 14)
+          const qualityScore = calcLeaderQualityScore(p)
+          const isCurrentLeader = CT_LEADERS.some(l => l.ticker === s.ticker)
+          all.push({ ticker: s.ticker, name: r.value.name || s.name, sector: s.sector, prediction: p, qualityScore, isCurrentLeader })
+        }
+      })
+    }
+    all.sort((a, b) =>
+      b.qualityScore !== a.qualityScore
+        ? b.qualityScore - a.qualityScore
+        : b.prediction.stableScore - a.prediction.stableScore
+    )
+    setCandidateResults(all)
+    setIsCandidateScanning(false)
   }
 
   // アクティブ先導株の4条件（CT理論準拠）:
@@ -846,6 +879,74 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
         </>
           )
         })()}
+
+      {/* 先導株入替セクション */}
+      <div className="leader-replace-section">
+        <button
+          className="btn-leader-replace"
+          onClick={() => { setShowReplaceMode(v => !v); setCandidateResults(null); setCandidateError(null) }}
+        >
+          {showReplaceMode ? '▲ 先導株入替モードを閉じる' : '先導株入替'}
+        </button>
+
+        {showReplaceMode && (
+          <div className="leader-replace-content">
+            <div className="leader-replace-note">
+              CT_UNIVERSE（{CT_UNIVERSE.length}銘柄）を品質スコアでスキャンし、先導株候補を提示します。<br />
+              <strong>最終判断はCT理論の4条件（時価総額・セクター代表性・機関投資家参加・価格リーダーシップ）で必ず人間が行ってください。</strong>
+            </div>
+            <button
+              className="btn-candidate-scan"
+              onClick={runCandidateScan}
+              disabled={isCandidateScanning}
+            >
+              {isCandidateScanning ? 'スキャン中...' : '先導株候補一覧'}
+            </button>
+
+            {candidateError && <div className="nikkei-error">{candidateError}</div>}
+
+            {candidateResults && (
+              <div className="candidate-list">
+                <div className="candidate-list-header">
+                  品質スコア順 — {candidateResults.length}銘柄スキャン完了
+                </div>
+                {candidateResults.map(item => {
+                  const qs          = item.qualityScore
+                  const needsReview = item.isCurrentLeader && qs <= 1
+                  const tierLabel   = qs >= 4 ? '🟢 有力候補' : qs >= 3 ? '🟡 候補' : '⚪ 参考'
+                  const tierClass   = qs >= 4 ? 'cand-strong' : qs >= 3 ? 'cand-mid' : 'cand-weak'
+                  return (
+                    <div key={item.ticker} className={`candidate-item ${item.isCurrentLeader ? 'cand-registered' : ''}`}>
+                      <div className="cand-left">
+                        <div className="cand-badges">
+                          {item.isCurrentLeader && <span className="cand-mark-registered">✓ 登録済</span>}
+                          {needsReview          && <span className="cand-mark-review">⚠ 要見直し</span>}
+                        </div>
+                        <div className="cand-ticker">{item.ticker}</div>
+                        <div className="cand-name">{item.name}</div>
+                        <div className="cand-sector">{item.sector}</div>
+                      </div>
+                      <div className="cand-right">
+                        <div className={`cand-tier ${tierClass}`}>{tierLabel}</div>
+                        <div className="cand-stars">{'★'.repeat(qs)}{'☆'.repeat(5 - qs)} {qs}/5</div>
+                        <div className={`cand-dir ${item.prediction.direction === 'UP' ? 'val-up' : 'val-down'}`}>
+                          {item.prediction.direction === 'UP' ? '▲ 上昇' : '▼ 下降'}
+                        </div>
+                        <div className="cand-stable">
+                          安定 {item.prediction.stableScore > 0 ? '+' : ''}{item.prediction.stableScore}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                <div className="candidate-list-footer">
+                  ※ 追加・削除はCT理論の4条件で人間が判断し、ctUniverse.js の CT_LEADERS を直接編集してください。
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
