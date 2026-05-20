@@ -1377,6 +1377,59 @@ h1 {
 
 .btn-screener:disabled { opacity: 0.55; cursor: not-allowed; }
 
+.screener-header-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.btn-vcp-filter {
+  padding: 6px 14px;
+  background: #1a2e1a;
+  color: #7ab87a;
+  border: 1.5px solid #3a6a3a;
+  border-radius: 6px;
+  font-size: 0.80rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+}
+.btn-vcp-filter:hover {
+  background: #223322;
+  border-color: #4a9a4a;
+}
+.btn-vcp-filter.vcp-filter-active {
+  background: rgba(39, 174, 96, 0.25);
+  color: #2ecc71;
+  border-color: #27ae60;
+  box-shadow: 0 0 8px rgba(39,174,96,0.35);
+}
+
+.screener-vcp-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  background: rgba(39, 174, 96, 0.18);
+  color: #2ecc71;
+  border: 1px solid #27ae60;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.screener-item-vcp {
+  border-left: 3px solid #27ae60 !important;
+}
+
+.screener-vcp-empty {
+  padding: 18px 16px;
+  color: #888;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
 .screener-error {
   font-size: 0.85rem;
   color: #ff9980;

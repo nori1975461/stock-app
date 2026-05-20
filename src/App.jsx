@@ -1054,10 +1054,12 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
   const [isScanning, setIsScanning]   = useState(false)
   const [progress, setProgress]       = useState({ current: 0, total: 0 })
   const [results, setResults]         = useState(initCache?.results   || null)
+  const [fullResults, setFullResults] = useState(initCache?.fullResults || null)
   const [sectorTops, setSectorTops]   = useState(initCache?.sectorTops || null)
   const [scannedCount, setScannedCount] = useState(initCache?.scannedCount || 0)
   const [cachedAt, setCachedAt]       = useState(initCache?.timestamp  || null)
   const [error, setError]             = useState(null)
+  const [vcpFilterActive, setVcpFilterActive] = useState(false)
 
   const formatAge = (ts) => {
     const m = Math.floor((Date.now() - ts) / 60000)
@@ -1121,6 +1123,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
 
     const top10 = sorted.slice(0, 10)
     const now   = Date.now()
+    const stripChart = item => ({ ...item, prediction: { ...item.prediction, chartData: null } })
 
     // キャッシュ保存（chartDataを除いてサイズ削減）
     try {
@@ -1128,24 +1131,32 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
         timestamp:    now,
         scannedCount: allResults.length,
         sectorTops:   sectorTopList,
-        results:      top10.map(item => ({
-          ...item,
-          prediction: { ...item.prediction, chartData: null },
-        })),
+        results:      top10.map(stripChart),
+        fullResults:  sorted.map(stripChart),
       }))
     } catch {}
 
     setResults(top10)
+    setFullResults(sorted)
     setSectorTops(sectorTopList)
     setScannedCount(allResults.length)
     setCachedAt(now)
     setIsScanning(false)
   }
 
-  const pct        = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
-  const topTickers = results ? results.map(r => r.ticker).join(',') : ''
+  const pct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
 
-  // 閾値ライン：最初にアクティブ条件を満たさないインデックス
+  // VCPフィルター：全スキャン結果からVCP確認銘柄を抽出（安定スコア降順）
+  const vcpResults = vcpFilterActive
+    ? (fullResults || results || [])
+        .filter(item => item.prediction.vcpPattern?.isVCP)
+        .sort((a, b) => b.prediction.stableScore - a.prediction.stableScore)
+    : null
+  const displayResults = vcpFilterActive ? (vcpResults || []) : results
+
+  const topTickers = displayResults ? displayResults.slice(0, 10).map(r => r.ticker).join(',') : ''
+
+  // 閾値ライン：最初にアクティブ条件を満たさないインデックス（通常ビューのみ使用）
   const thresholdIdx = results
     ? results.findIndex(item => !(item.prediction.direction === 'UP' && item.prediction.stableScore >= ACTIVE_MIN_STABLE))
     : -1
@@ -1159,9 +1170,19 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
             {CT_UNIVERSE.length}銘柄をCLEAR TRADE理論でスキャンし、上位10銘柄を自動選定
           </div>
         </div>
-        <button className="btn-screener" onClick={run} disabled={isScanning}>
-          {isScanning ? 'スキャン中...' : results ? '再スキャン' : '上位10銘柄を探す'}
-        </button>
+        <div className="screener-header-btns">
+          <button className="btn-screener" onClick={run} disabled={isScanning}>
+            {isScanning ? 'スキャン中...' : results ? '再スキャン' : '上位10銘柄を探す'}
+          </button>
+          {results && !isScanning && (
+            <button
+              className={`btn-vcp-filter ${vcpFilterActive ? 'vcp-filter-active' : ''}`}
+              onClick={() => setVcpFilterActive(v => !v)}
+            >
+              🟢 VCP確認のみ
+            </button>
+          )}
+        </div>
       </div>
 
       {/* キャッシュ鮮度表示 */}
@@ -1187,7 +1208,14 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
 
       {results && (
         <>
-          {(() => {
+          {vcpFilterActive ? (
+            <div className="screener-summary">
+              🟢 VCP確認銘柄：<strong>{vcpResults?.length || 0}件</strong>
+              {fullResults
+                ? `（${scannedCount}銘柄中）`
+                : '（上位10銘柄中 — 全銘柄対象にするには再スキャンを実行）'}
+            </div>
+          ) : (() => {
             const leaderTickers = new Set(CT_LEADERS.map(l => l.ticker))
             const leaderInResults = results.filter(item => leaderTickers.has(item.ticker))
             return (
@@ -1227,27 +1255,36 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
 
           <details className="screener-results-section" open>
             <summary className="screener-results-toggle">
-              スキャン結果 上位10銘柄
+              {vcpFilterActive
+                ? `VCP確認銘柄 ${displayResults.length}件（安定スコア順）`
+                : 'スキャン結果 上位10銘柄'}
             </summary>
             <div className="screener-results">
-              {results.map((item, i) => {
+              {displayResults.length === 0 && vcpFilterActive && (
+                <div className="screener-vcp-empty">
+                  VCP確認銘柄が見つかりませんでした。再スキャンで最新データを取得するか、相場がBASING形成前の可能性があります。
+                </div>
+              )}
+              {displayResults.map((item, i) => {
                 const p        = item.prediction
                 const isActive = p.direction === 'UP' && p.stableScore >= ACTIVE_MIN_STABLE
                 const isLeader = CT_LEADERS.some(l => l.ticker === item.ticker)
+                const isVCP    = p.vcpPattern?.isVCP
                 return (
                   <Fragment key={item.ticker}>
-                    {thresholdIdx > 0 && i === thresholdIdx && (
+                    {!vcpFilterActive && thresholdIdx > 0 && i === thresholdIdx && (
                       <div className="screener-threshold-line">
                         ── アクティブ候補ライン（以下は監視のみ・エントリー不推奨） ──
                       </div>
                     )}
-                    <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''} ${isLeader ? 'screener-item-leader' : ''}`}>
-                      <div className="screener-rank">{RANK_LABELS[i]}</div>
+                    <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''} ${isLeader ? 'screener-item-leader' : ''} ${isVCP ? 'screener-item-vcp' : ''}`}>
+                      <div className="screener-rank">{RANK_LABELS[i] ?? `${i + 1}`}</div>
                       <div className="screener-body">
                         <div className="screener-name-row">
                           <span className="screener-ticker">{item.ticker}</span>
                           <span className="screener-name">{item.name}</span>
                           <span className="screener-sector">{item.sector}</span>
+                          {isVCP && <span className="screener-vcp-badge">🟢 VCP</span>}
                           {isLeader && <span className="screener-leader-badge">★ 先導株</span>}
                           {isLeader && <LeaderActivityBadge p={p} />}
                           {!isActive && <span className="screener-watch-badge">監視</span>}
