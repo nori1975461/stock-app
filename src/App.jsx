@@ -213,6 +213,46 @@ function LeaderActivityBadge({ p }) {
   return <span className={`leader-activity-badge ${cls}`}>{label}</span>
 }
 
+function VCPDisplay({ p }) {
+  const vcp = p.vcpPattern
+  if (!vcp) return null
+
+  return (
+    <div className="vcp-section">
+      <div className="vcp-title">VCP（出来高ドライアップ）</div>
+      <div className="vcp-rows">
+        <div className="vcp-row">
+          <span className="vcp-label">出来高縮小</span>
+          <span className={`vcp-val ${vcp.isVolumeDryUp ? 'val-up' : ''}`}>
+            {vcp.isVolumeDryUp
+              ? `✅ 確認（${vcp.volContractions}/3段階）`
+              : `⚠ 不十分（${vcp.volContractions}/3段階）`}
+          </span>
+        </div>
+        <div className="vcp-row">
+          <span className="vcp-label">価格レンジ収縮</span>
+          <span className={`vcp-val ${vcp.isPriceContracting ? 'val-up' : ''}`}>
+            {vcp.isPriceContracting
+              ? `✅ ${vcp.rangeContractionPct != null ? vcp.rangeContractionPct + '%縮小' : '確認'}`
+              : '⚠ 収縮不十分'}
+          </span>
+        </div>
+        {vcp.recentVolRatio !== null && (
+          <div className="vcp-row">
+            <span className="vcp-label">直近出来高水準</span>
+            <span className={`vcp-val ${vcp.recentVolRatio < 0.7 ? 'val-up' : ''}`}>
+              {(vcp.recentVolRatio * 100).toFixed(0)}%（40日前比）
+            </span>
+          </div>
+        )}
+      </div>
+      <div className={`vcp-badge ${vcp.isVCP ? 'vcp-confirmed' : 'vcp-unconfirmed'}`}>
+        {vcp.isVCP ? '🟢 VCP確認 — BASING（売り手枯渇）' : '⚪ VCP未確認 — BASING形成中'}
+      </div>
+    </div>
+  )
+}
+
 function RiskRewardDisplay({ ticker, p }) {
   const rr = calcRiskReward(p)
   if (!rr) return null
@@ -1905,6 +1945,8 @@ function DetailCard({ item, onClose }) {
 
       <CTMetrics p={p} />
 
+      <VCPDisplay p={p} />
+
       <RiskRewardDisplay ticker={item.ticker} p={p} />
 
       <ExitPanel p={p} />
@@ -2305,6 +2347,8 @@ export default function App() {
           <EntryJudgmentBadge p={result} />
 
           <CTMetrics p={result} />
+
+          <VCPDisplay p={result} />
 
           <RiskRewardDisplay ticker={result.ticker} p={result} />
 

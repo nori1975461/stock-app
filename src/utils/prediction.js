@@ -77,6 +77,56 @@ function detectStagnation(closes, volumes, period = 5) {
   return closes[n - period] > Math.min(...priorCloses) * 1.02
 }
 
+// VCP（Volatility Contraction Pattern）出来高ドライアップ検知
+// Minervini理論：40日を4分割し、価格レンジ・出来高が段階的に縮小＝売り手枯渇→BASING確認
+function detectVCPPattern(closes, volumes, lookback = 40) {
+  const segDays = Math.floor(lookback / 4)
+  const n = closes.length
+  if (n < lookback + 5 || segDays < 5) return null
+
+  const segments = []
+  for (let seg = 0; seg < 4; seg++) {
+    const end       = n - (3 - seg) * segDays
+    const start     = end - segDays
+    const segCloses = closes.slice(start, end)
+    const segVols   = volumes.slice(start, end).filter(v => v > 0)
+    if (segCloses.length === 0) return null
+    const high       = Math.max(...segCloses)
+    const low        = Math.min(...segCloses)
+    const priceRange = low > 0 ? (high - low) / low * 100 : 0
+    const avgVol     = segVols.length > 0 ? segVols.reduce((a, b) => a + b, 0) / segVols.length : 0
+    segments.push({ priceRange: +priceRange.toFixed(1), avgVol })
+  }
+  // segments[0]=最古期間 / segments[3]=直近期間
+
+  let volContractions = 0, rangeContractions = 0
+  for (let i = 1; i < 4; i++) {
+    if (segments[i].avgVol   < segments[i - 1].avgVol   * 0.90) volContractions++
+    if (segments[i].priceRange < segments[i - 1].priceRange * 0.90) rangeContractions++
+  }
+
+  const isVolumeDryUp      = volContractions >= 2
+  const isPriceContracting = rangeContractions >= 1
+  const isVCP              = isVolumeDryUp && isPriceContracting
+
+  const recentVolRatio     = segments[0].avgVol > 0
+    ? segments[3].avgVol / segments[0].avgVol : null
+  const rangeContractionPct = segments[0].priceRange > 0
+    ? (1 - segments[3].priceRange / segments[0].priceRange) * 100 : null
+
+  return {
+    isVCP,
+    isVolumeDryUp,
+    isPriceContracting,
+    volContractions,
+    rangeContractions,
+    recentVolRatio:      recentVolRatio      !== null ? +recentVolRatio.toFixed(2)      : null,
+    rangeContractionPct: rangeContractionPct !== null ? +rangeContractionPct.toFixed(0) : null,
+    currentRange:        segments[3].priceRange,
+    initialRange:        segments[0].priceRange,
+  }
+}
+
 function calcMagnetEffect(closes, lookback = 90) {
   const n = closes.length
   const lastClose = closes[n - 1]
@@ -387,6 +437,7 @@ function calcStableScoreOnly(prices) {
   }
 
   if (hasVol && detectStagnation(closes, volumes, 5)) s += 1
+  if (hasVol && detectVCPPattern(closes, volumes, 40)?.isVCP) s += 1
 
   const mag = calcMagnetEffect(closes, 90)
   if (mag.status === 'NEW_HIGH' || mag.status === 'BREAKOUT') s += 2
@@ -589,6 +640,17 @@ export function predict(allPrices, days, macroAdjust = null) {
     signals.push('停滞シグナル検出：上昇後に出来高が減り価格が安定→売り手不在で上昇継続の可能性')
   }
 
+  // ── VCP（出来高ドライアップ）─────────────────────────────────
+  const vcpPattern = hasVolume ? detectVCPPattern(closes, volumes, 40) : null
+
+  if (vcpPattern?.isVCP) {
+    score += 1; stableScore += 1
+    const contStr  = `出来高${vcpPattern.volContractions}/3段階縮小`
+    const rangeStr = vcpPattern.rangeContractionPct != null
+      ? `・レンジ${vcpPattern.rangeContractionPct}%収縮` : ''
+    signals.push(`VCP確認（${contStr}${rangeStr}）：40日かけた出来高ドライアップ→売り手枯渇・BASING形成完了`)
+  }
+
   // ── マグネット効果（過去高値との位置関係）─────────────────
   const magnetEffect = calcMagnetEffect(closes, 90)
 
@@ -771,6 +833,7 @@ export function predict(allPrices, days, macroAdjust = null) {
     trendDays,
     obvTrend,
     isStagnating,
+    vcpPattern,
     magnetEffect,
     hasVolume,
     lastVolume:       volumes[n - 1] || null,

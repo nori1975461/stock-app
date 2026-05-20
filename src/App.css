@@ -3438,3 +3438,57 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
   font-size: 0.75rem;
   color: #888;
 }
+
+/* ── VCP（出来高ドライアップ）────────────────────────────── */
+.vcp-section {
+  background: #1a1a2e;
+  border: 1px solid #2a4a6a;
+  border-radius: 8px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.vcp-title {
+  background: #0f2a44;
+  color: #7ab8e8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #2a4a6a;
+}
+.vcp-rows {
+  padding: 6px 0 2px;
+}
+.vcp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+}
+.vcp-label {
+  color: #aaa;
+  flex-shrink: 0;
+}
+.vcp-val {
+  color: #ccc;
+  text-align: right;
+}
+.vcp-badge {
+  margin: 8px 14px 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+}
+.vcp-confirmed {
+  background: rgba(39, 174, 96, 0.18);
+  color: #2ecc71;
+  border: 1px solid #27ae60;
+}
+.vcp-unconfirmed {
+  background: rgba(127, 127, 127, 0.12);
+  color: #aaa;
+  border: 1px solid #555;
+}
