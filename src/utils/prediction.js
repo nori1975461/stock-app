@@ -459,6 +459,59 @@ function calcScoreTrend(series) {
   return { scoreTrend, scoreDelta }
 }
 
+// ── リスクリワード比計算（Risk/Reward Ratio）────────────────────────────────
+// 「相場の魔術師」全員が強調する最重要概念。CT理論の目標：RR比2以上
+// 損切り：O'Neil標準 -8%（過去高値への上昇余地が8%超ある場合のみ有効）
+// 目標価格：マグネット効果のステータスに基づいて算出
+export function calcRiskReward(p) {
+  const entry = p.lastClose
+  if (!entry || entry <= 0 || p.direction !== 'UP') return null
+
+  const stopLossPct = 8.0
+  const stopPrice   = entry * (1 - stopLossPct / 100)
+
+  const mag = p.magnetEffect
+  if (!mag) return null
+
+  let targetPct, targetPrice, targetBasis
+  if (mag.status === 'NEW_HIGH') {
+    targetPct   = 20
+    targetPrice = entry * 1.20
+    targetBasis = '上値抵抗なし（新高値更新）→ +20%目標'
+  } else if (mag.status === 'BREAKOUT') {
+    targetPct   = 15
+    targetPrice = entry * 1.15
+    targetBasis = '高値圏ブレイクアウト → +15%目標'
+  } else if (mag.status === 'RESISTANCE' && mag.historicalHigh) {
+    targetPrice = mag.historicalHigh * 1.05
+    targetPct   = (targetPrice - entry) / entry * 100
+    targetBasis = `過去高値(${mag.historicalHigh.toLocaleString()})突破後+5%を目標`
+  } else if (mag.status === 'BELOW' && mag.historicalHigh) {
+    targetPrice = mag.historicalHigh
+    targetPct   = (targetPrice - entry) / entry * 100
+    targetBasis = `過去高値(${mag.historicalHigh.toLocaleString()})への回帰を目標`
+  } else {
+    targetPct   = 15
+    targetPrice = entry * 1.15
+    targetBasis = 'デフォルト目標 +15%'
+  }
+
+  if (targetPct <= 0) return null
+
+  const rrRatio = targetPct / stopLossPct
+
+  return {
+    entry:        +entry.toFixed(2),
+    targetPrice:  +targetPrice.toFixed(2),
+    targetPct:    +targetPct.toFixed(1),
+    stopPrice:    +stopPrice.toFixed(2),
+    stopLossPct,
+    rrRatio:      +rrRatio.toFixed(2),
+    targetBasis,
+    isCTClear:    rrRatio >= 2.0,
+  }
+}
+
 // macroAdjust は受け入れるが無視（CT理論はセクターマクロをスコアに含めない）
 export function predict(allPrices, days, macroAdjust = null) {
   const n        = allPrices.length

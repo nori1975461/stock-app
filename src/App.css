@@ -3373,3 +3373,68 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
   border-top: 1px solid #e0cba8;
   line-height: 1.5;
 }
+
+/* ─── リスクリワード比（Risk/Reward Ratio）────────────────── */
+.rr-section {
+  margin: 14px 0;
+  border: 1.5px solid #c9a97a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.rr-title {
+  background: #f5e9d5;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #7a4f1e;
+  border-bottom: 1px solid #e0cba8;
+}
+
+.rr-rows {
+  padding: 10px 14px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.rr-row-target { background: #f0faf2; border-radius: 4px; padding: 2px 6px; margin: 0 -6px; }
+.rr-row-stop   { background: #fff0f0; border-radius: 4px; padding: 2px 6px; margin: 0 -6px; }
+
+.rr-label { color: #555; }
+.rr-val   { font-weight: 700; }
+
+.rr-ratio-badge {
+  margin: 0 14px 10px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rr-good { background: #e8f5e9; color: #1b5e20; border: 1.5px solid #66bb6a; }
+.rr-mid  { background: #fff8e1; color: #e65100; border: 1.5px solid #ffb300; }
+.rr-bad  { background: #fdecea; color: #b71c1c; border: 1.5px solid #ef9a9a; }
+
+.rr-status-text {
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+.rr-basis {
+  padding: 0 14px 10px;
+  font-size: 0.75rem;
+  color: #888;
+}

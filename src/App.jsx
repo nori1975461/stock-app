@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { LineChart, ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { fetchStockData } from './utils/api'
-import { predict } from './utils/prediction'
+import { predict, calcRiskReward } from './utils/prediction'
 import { getSameIndustryRecommendations, getStockSector } from './utils/industries'
 import { MACRO_CONTEXT, SECTOR_MACRO, USD_JPY_RATE } from './utils/macroContext'
 import { CT_UNIVERSE, CT_LEADERS, LEADER_RANK_LABEL, LEADER_RANK_CLASS, SECTOR_BAROMETERS } from './utils/ctUniverse'
@@ -211,6 +211,46 @@ function LeaderActivityBadge({ p }) {
   }
   const { cls, label } = config[state]
   return <span className={`leader-activity-badge ${cls}`}>{label}</span>
+}
+
+function RiskRewardDisplay({ ticker, p }) {
+  const rr = calcRiskReward(p)
+  if (!rr) return null
+
+  const isJP     = ticker?.endsWith('.T')
+  const currency = isJP ? '円' : 'USD'
+  const fmtAmt   = v => isJP ? Math.round(v).toLocaleString() + currency : v.toFixed(2) + currency
+  const rrClass  = rr.rrRatio >= 2.0 ? 'rr-good' : rr.rrRatio >= 1.5 ? 'rr-mid' : 'rr-bad'
+  const rrStatus = rr.isCTClear
+    ? '✅ CT基準クリア（RR比2.0以上）'
+    : rr.rrRatio >= 1.5
+      ? '⚠ CT基準（2.0）まであと少し'
+      : '❌ CT基準未達 — エントリー見送り推奨'
+
+  return (
+    <div className="rr-section">
+      <div className="rr-title">リスクリワード比</div>
+      <div className="rr-rows">
+        <div className="rr-row">
+          <span className="rr-label">エントリー想定</span>
+          <span className="rr-val">{fmtAmt(rr.entry)}</span>
+        </div>
+        <div className="rr-row rr-row-target">
+          <span className="rr-label">▲ 目標価格</span>
+          <span className="rr-val val-up">+{rr.targetPct}%（{fmtAmt(rr.targetPrice)}）</span>
+        </div>
+        <div className="rr-row rr-row-stop">
+          <span className="rr-label">▼ 損切り価格</span>
+          <span className="rr-val val-down">-{rr.stopLossPct}%（{fmtAmt(rr.stopPrice)}）</span>
+        </div>
+      </div>
+      <div className={`rr-ratio-badge ${rrClass}`}>
+        RR比　{rr.rrRatio}
+        <span className="rr-status-text">{rrStatus}</span>
+      </div>
+      <div className="rr-basis">{rr.targetBasis}</div>
+    </div>
+  )
 }
 
 function ScoreSparkline({ series, trend, delta }) {
@@ -1865,6 +1905,8 @@ function DetailCard({ item, onClose }) {
 
       <CTMetrics p={p} />
 
+      <RiskRewardDisplay ticker={item.ticker} p={p} />
+
       <ExitPanel p={p} />
 
       {p.forecast && (
@@ -2263,6 +2305,8 @@ export default function App() {
           <EntryJudgmentBadge p={result} />
 
           <CTMetrics p={result} />
+
+          <RiskRewardDisplay ticker={result.ticker} p={result} />
 
           <ExitPanel p={result} />
 
