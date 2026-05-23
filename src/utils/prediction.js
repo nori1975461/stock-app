@@ -440,8 +440,8 @@ function calcStableScoreOnly(prices) {
   if (rv !== null) {
     const up = n >= 2 && closes[n - 1] > closes[n - 2]
     if (rv > 2.5)             s -= 2
-    else if (rv > 1.3 && up)  s += 2
-    else if (rv > 1.3 && !up) s -= 1
+    else if (rv > 1.4 && up)  s += 2
+    else if (rv > 1.4 && !up) s -= 1
   }
 
   const disc = calcDisciplinaryPossibility(closes, 15)
@@ -606,12 +606,12 @@ export function predict(allPrices, days, macroAdjust = null) {
     if (relativeVolume > 2.5) {
       score -= 2; stableScore -= 2
       signals.push(`出来高が平均の${relativeVolume.toFixed(1)}倍：急増は反転シグナル（高値つかみのリスク）`)
-    } else if (relativeVolume > 1.3 && priceUp) {
+    } else if (relativeVolume > 1.4 && priceUp) {
       score += 2; stableScore += 2
-      signals.push(`出来高${(relativeVolume * 100).toFixed(0)}%で株価上昇：資金が流入している強い買い`)
-    } else if (relativeVolume > 1.3 && !priceUp) {
+      signals.push(`出来高 平均比+${((relativeVolume - 1) * 100).toFixed(0)}%で株価上昇：O'Neil基準クリア（+40%以上）の強いブレイクアウト`)
+    } else if (relativeVolume > 1.4 && !priceUp) {
       score -= 1; stableScore -= 1
-      signals.push('出来高増加で株価下落：売り圧力が強い')
+      signals.push(`出来高 平均比+${((relativeVolume - 1) * 100).toFixed(0)}%増で株価下落：強い売り圧力`)
     } else if (relativeVolume < 0.5) {
       signals.push(`出来高が平均の${(relativeVolume * 100).toFixed(0)}%：売買が少ない（様子見）`)
     } else {
