@@ -86,8 +86,8 @@ function generateBuyAdvice(rankedItems) {
   if (p.trendDays >= 4) {
     reasons.push(`${p.trendDays}日連続上昇：慣性の法則が発動中—強いトレンドは続く`)
   }
-  if (p.relativeVolume !== null && p.relativeVolume > 1.2 && p.direction === 'UP') {
-    reasons.push(`出来高 ${(p.relativeVolume * 100).toFixed(0)}%（平均比）：資金流入を伴う健全な上昇`)
+  if (p.relativeVolume !== null && p.relativeVolume > 1.4 && p.direction === 'UP') {
+    reasons.push(`出来高 平均比+${((p.relativeVolume - 1) * 100).toFixed(0)}%：O'Neil基準クリアの資金流入を伴う上昇`)
   }
   if (p.disciplinaryPct != null && p.disciplinaryPct >= 75 && !reasons.some(r => r.includes('規律'))) {
     reasons.push(`規律可能性 ${p.disciplinaryPct}%：値動きが予測しやすい状態`)
@@ -135,7 +135,7 @@ function IndicatorBadges({ p }) {
         </span>
       )}
       {p.relativeVolume != null && (
-        <span className={`ind-badge ${p.relativeVolume > 2.5 ? 'bear' : p.relativeVolume > 1.2 ? 'bull' : 'neutral'}`}>
+        <span className={`ind-badge ${p.relativeVolume > 2.5 ? 'bear' : p.relativeVolume > 1.4 ? 'bull' : 'neutral'}`}>
           VOL {p.relativeVolume.toFixed(1)}x
         </span>
       )}
@@ -184,7 +184,7 @@ function calcLeaderActivityState(p) {
     p.obvTrend === 'UP' &&
     (p.relativeVolume > 1.4 || p.magnetEffect?.status === 'NEW_HIGH' || p.magnetEffect?.status === 'BREAKOUT')
   ) return 'LEADING'
-  if (p.isStagnating && p.stableScore >= 0) return 'BASING'
+  if ((p.isStagnating || p.vcpPattern?.isVCP) && p.stableScore >= 0) return 'BASING'
   return 'WATCHING'
 }
 
