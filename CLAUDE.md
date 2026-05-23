@@ -33,7 +33,7 @@ stock-app/
 │   └── utils/
 │       ├── api.js        # GAS・Alpha Vantage API通信
 │       ├── prediction.js # CT理論スコアリングエンジン（9指標）
-│       ├── ctUniverse.js # CT_UNIVERSE（60銘柄）/ CT_LEADERS（8銘柄）/ SECTOR_BAROMETERS（16銘柄）
+│       ├── ctUniverse.js # CT_UNIVERSE（88銘柄）/ CT_LEADERS（8銘柄）/ SECTOR_BAROMETERS（16銘柄）
 │       ├── macroContext.js # マクロ環境データ（参考表示のみ・スコア非反映）
 │       └── industries.js # 業種分類・同業種推奨
 └── gas/

@@ -6,7 +6,7 @@
 //  - AI・半導体・デジタルインフラのサプライチェーンに連なる銘柄
 //  - 米国「先導株」（NVDA等）の波及先となる国内銘柄を網羅
 
-// ── CT銘柄ユニバース（全スキャン対象：約60銘柄）────────────────────────
+// ── CT銘柄ユニバース（全スキャン対象：約88銘柄）────────────────────────
 export const CT_UNIVERSE = [
 
   // ━━ 電子部品・半導体（マクロスコア +2 ／ CT最重点セクター）━━━━━━━━━━━
@@ -23,6 +23,8 @@ export const CT_UNIVERSE = [
   { ticker: '7735.T', name: 'SCREENホールディングス',  sector: '電子部品・半導体' },
   { ticker: '6525.T', name: 'KOKUSAI ELECTRIC',        sector: '電子部品・半導体' },
   { ticker: '6976.T', name: '太陽誘電',                 sector: '電子部品・半導体' },
+  { ticker: '6723.T', name: 'ルネサスエレクトロニクス',  sector: '電子部品・半導体' },
+  { ticker: '6971.T', name: '京セラ',                   sector: '電子部品・半導体' },
 
   // ━━ 通信（マクロスコア +2）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '9984.T', name: 'ソフトバンクグループ',    sector: '通信' },
@@ -37,6 +39,7 @@ export const CT_UNIVERSE = [
   { ticker: '6702.T', name: '富士通',                  sector: '電気機器' },
   { ticker: '6594.T', name: 'ニデック',                sector: '電気機器' },
   { ticker: '6506.T', name: '安川電機',                sector: '電気機器' },
+  { ticker: '6752.T', name: 'パナソニック HD',          sector: '電気機器' },
 
   // ━━ IT・情報サービス（マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '4385.T', name: 'メルカリ',                sector: 'IT・情報サービス' },
@@ -68,11 +71,14 @@ export const CT_UNIVERSE = [
   { ticker: '4063.T', name: '信越化学工業',            sector: '化学' },
   { ticker: '4901.T', name: '富士フイルムHD',          sector: '化学' },
   { ticker: '4452.T', name: '花王',                    sector: '化学' },
+  { ticker: '3407.T', name: '旭化成',                  sector: '化学' },
 
   // ━━ 総合商社（資源×AI投資）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '8001.T', name: '伊藤忠商事',              sector: '総合商社' },
   { ticker: '8058.T', name: '三菱商事',                sector: '総合商社' },
   { ticker: '8031.T', name: '三井物産',                sector: '総合商社' },
+  { ticker: '8053.T', name: '住友商事',                sector: '総合商社' },
+  { ticker: '8002.T', name: '丸紅',                    sector: '総合商社' },
 
   // ━━ 銀行（マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '8306.T', name: '三菱UFJ FG',              sector: '銀行' },
@@ -91,6 +97,7 @@ export const CT_UNIVERSE = [
   // ━━ 医薬品（バイオAI）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '4519.T', name: '中外製薬',                sector: '医薬品' },
   { ticker: '4568.T', name: '第一三共',                sector: '医薬品' },
+  { ticker: '4503.T', name: 'アステラス製薬',           sector: '医薬品' },
 
   // ━━ データセンター・AIインフラ（電力・冷却・建設）━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '9531.T', name: '東京ガス',                sector: 'データセンター・電力' },
@@ -107,6 +114,8 @@ export const CT_UNIVERSE = [
 
   // ━━ 不動産（金利感応・相場転換の先行指標）━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '8802.T', name: '三菱地所',                sector: '不動産' },
+  { ticker: '8801.T', name: '三井不動産',              sector: '不動産' },
+  { ticker: '8830.T', name: '住友不動産',              sector: '不動産' },
 
   // ━━ 米国株（CT先導株・2024-2026年の市場牽引銘柄）━━━━━━━━━━━━━━━━━━━━━
   { ticker: 'NVDA',   name: 'NVIDIA',                  sector: '米国半導体' },
