@@ -127,6 +127,27 @@ function detectVCPPattern(closes, volumes, lookback = 40) {
   }
 }
 
+// 52週高値との距離（O'Neil基準：高値の15%以内にある銘柄のみ買い候補）
+// lookback=250 ≈ 約1年分の営業日
+function calc52WeekHigh(closes, lookback = 250) {
+  const n = closes.length
+  if (n < 10) return null
+  const history = closes.slice(Math.max(0, n - lookback - 1), n - 1)
+  if (history.length < 10) return null
+  const high52w    = Math.max(...history)
+  const lastClose  = closes[n - 1]
+  const distancePct = ((lastClose - high52w) / high52w) * 100
+  const toHighPct   = -distancePct
+  return {
+    high52w:     +high52w.toFixed(2),
+    distancePct: +distancePct.toFixed(1),
+    toHighPct:   +Math.max(0, toHighPct).toFixed(1),
+    isWithin15:  distancePct >= -15,
+    isNewHigh:   distancePct > 0,
+    daysLookback: history.length,
+  }
+}
+
 function calcMagnetEffect(closes, lookback = 90) {
   const n = closes.length
   const lastClose = closes[n - 1]
@@ -834,6 +855,7 @@ export function predict(allPrices, days, macroAdjust = null) {
     obvTrend,
     isStagnating,
     vcpPattern,
+    weekHigh52: calc52WeekHigh(closes, 250),
     magnetEffect,
     hasVolume,
     lastVolume:       volumes[n - 1] || null,

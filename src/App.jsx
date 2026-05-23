@@ -253,6 +253,47 @@ function VCPDisplay({ p }) {
   )
 }
 
+function WeekHigh52Display({ ticker, p }) {
+  const wh = p.weekHigh52
+  if (!wh) return null
+
+  const isJP   = ticker?.endsWith('.T')
+  const fmtAmt = v => isJP ? Math.round(v).toLocaleString() + '円' : v.toFixed(2) + 'USD'
+
+  return (
+    <div className="wh52-section">
+      <div className="wh52-title">52週高値との距離（O'Neil基準）</div>
+      <div className="wh52-rows">
+        <div className="wh52-row">
+          <span className="wh52-label">52週高値</span>
+          <span className="wh52-val">{fmtAmt(wh.high52w)}</span>
+        </div>
+        <div className="wh52-row">
+          <span className="wh52-label">現在値との距離</span>
+          <span className={`wh52-val ${wh.isNewHigh ? 'val-up' : wh.isWithin15 ? '' : 'val-down'}`}>
+            {wh.isNewHigh
+              ? `+${Math.abs(wh.distancePct)}%（新高値更新中）`
+              : `−${wh.toHighPct}%（高値まで +${wh.toHighPct}%）`}
+          </span>
+        </div>
+        <div className="wh52-row">
+          <span className="wh52-label">O'Neil 15%ルール</span>
+          <span className={`wh52-val ${wh.isWithin15 ? 'val-up' : 'val-down'}`}>
+            {wh.isWithin15 ? '✅ 15%以内 — 買い候補圏内' : `❌ ${wh.toHighPct}%下 — 買い候補外`}
+          </span>
+        </div>
+      </div>
+      <div className={`wh52-badge ${wh.isNewHigh ? 'wh52-newhigh' : wh.isWithin15 ? 'wh52-ok' : 'wh52-ng'}`}>
+        {wh.isNewHigh
+          ? '🚀 新高値更新中 — 上値抵抗なし・最優先候補'
+          : wh.isWithin15
+            ? `✅ 高値の${wh.toHighPct}%下 — O'Neil基準クリア`
+            : `⛔ 高値の${wh.toHighPct}%下 — O'Neil基準外（待機推奨）`}
+      </div>
+    </div>
+  )
+}
+
 function RiskRewardDisplay({ ticker, p }) {
   const rr = calcRiskReward(p)
   if (!rr) return null
@@ -1984,6 +2025,8 @@ function DetailCard({ item, onClose }) {
 
       <VCPDisplay p={p} />
 
+      <WeekHigh52Display ticker={item.ticker} p={p} />
+
       <RiskRewardDisplay ticker={item.ticker} p={p} />
 
       <ExitPanel p={p} />
@@ -2386,6 +2429,8 @@ export default function App() {
           <CTMetrics p={result} />
 
           <VCPDisplay p={result} />
+
+          <WeekHigh52Display ticker={result.ticker} p={result} />
 
           <RiskRewardDisplay ticker={result.ticker} p={result} />
 

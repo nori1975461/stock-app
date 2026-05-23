@@ -3492,6 +3492,57 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
   color: #888;
 }
 
+/* ── 52週高値との距離（O'Neil基準）──────────────────────── */
+.wh52-section {
+  background: #1a1a2a;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.wh52-title {
+  background: #12122a;
+  color: #9090d8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #3a3a5a;
+}
+.wh52-rows { padding: 6px 0 2px; }
+.wh52-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+}
+.wh52-label { color: #aaa; flex-shrink: 0; }
+.wh52-val   { color: #ccc; text-align: right; }
+.wh52-badge {
+  margin: 8px 14px 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+}
+.wh52-newhigh {
+  background: rgba(39, 174, 96, 0.22);
+  color: #2ecc71;
+  border: 1px solid #27ae60;
+}
+.wh52-ok {
+  background: rgba(52, 152, 219, 0.18);
+  color: #5dade2;
+  border: 1px solid #2980b9;
+}
+.wh52-ng {
+  background: rgba(180, 60, 60, 0.18);
+  color: #e08080;
+  border: 1px solid #8b3a3a;
+}
+
 /* ── VCP（出来高ドライアップ）────────────────────────────── */
 .vcp-section {
   background: #1a1a2e;
