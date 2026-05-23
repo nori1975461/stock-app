@@ -1974,49 +1974,65 @@ details:not([open]) .screener-results-toggle::before { content: '▶ '; }
   color: #aaa;
 }
 
-/* ─── ブレイクアウト出来高ステータス行 ────────── */
-.breakout-vol-row {
+/* ─── ブレイクアウト出来高（独立パネル） ────────── */
+.breakout-vol-section {
+  border-radius: 8px;
+  margin: 10px 0;
+  overflow: hidden;
+  border: 1px solid;
+}
+.bv-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid inherit;
+  opacity: 0.85;
+}
+.bv-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 14px;
-  margin: 4px 0;
-  border-radius: 6px;
-  border-left: 4px solid transparent;
+  gap: 4px;
+  padding: 10px 14px 12px;
 }
 .bv-label {
-  font-size: 0.85rem;
+  font-size: 0.90rem;
   font-weight: 700;
 }
 .bv-detail {
-  font-size: 0.75rem;
-  opacity: 0.82;
+  font-size: 0.78rem;
+  opacity: 0.80;
 }
 .bv-breakout {
-  background: rgba(39,174,96,0.12);
-  border-left-color: #27ae60;
-  color: #2ecc71;
+  background: #0d2a18;
+  border-color: #1e7040;
+  color: #4cda88;
 }
+.bv-breakout .bv-title { background: #0a1f12; border-bottom-color: #1e7040; }
 .bv-sell {
-  background: rgba(192,60,60,0.12);
-  border-left-color: #c03c3c;
-  color: #e08080;
+  background: #2a0d0d;
+  border-color: #7a2020;
+  color: #d06060;
 }
+.bv-sell .bv-title { background: #1f0a0a; border-bottom-color: #7a2020; }
 .bv-danger {
-  background: rgba(200,80,0,0.12);
-  border-left-color: #e07020;
-  color: #e09050;
+  background: #2a1800;
+  border-color: #8a4000;
+  color: #c87030;
 }
+.bv-danger .bv-title { background: #1f1000; border-bottom-color: #8a4000; }
 .bv-mild {
-  background: rgba(180,150,20,0.10);
-  border-left-color: #b09020;
-  color: #c8b050;
+  background: #201c00;
+  border-color: #6a5800;
+  color: #b09830;
 }
+.bv-mild .bv-title { background: #181400; border-bottom-color: #6a5800; }
 .bv-low, .bv-normal {
-  background: rgba(120,120,120,0.08);
-  border-left-color: #555;
-  color: #888;
+  background: #1a1a1a;
+  border-color: #3a3a3a;
+  color: #808080;
 }
+.bv-low .bv-title, .bv-normal .bv-title { background: #141414; border-bottom-color: #3a3a3a; }
 
 /* ─── エントリータイミングセクション ────────── */
 .entry-timing-section {
