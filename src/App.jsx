@@ -512,6 +512,38 @@ function CTMetrics({ p }) {
           </strong>
         </div>
       </div>
+      {p.relativeVolume != null && (() => {
+        const rv  = p.relativeVolume
+        const up  = p.direction === 'UP'
+        const pct = ((rv - 1) * 100).toFixed(0)
+        let cls, label, detail
+        if (rv > 2.5) {
+          cls = 'bv-danger'; label = '⚠ 出来高急増（反転リスク）'
+          detail = `平均の${(rv * 100).toFixed(0)}%：高値つかみに注意`
+        } else if (rv > 1.4 && up) {
+          cls = 'bv-breakout'; label = `✅ ブレイクアウト確認（+${pct}%）`
+          detail = `O'Neil基準クリア（+40%以上）— 機関投資家の本格参入`
+        } else if (rv > 1.4 && !up) {
+          cls = 'bv-sell'; label = `⚠ 出来高増加で下落（+${pct}%）`
+          detail = '強い売り圧力 — エントリー見送り推奨'
+        } else if (rv > 1.2) {
+          cls = 'bv-mild'; label = `△ 出来高やや増加（+${pct}%）`
+          detail = `O'Neil基準（+40%）未達 — ブレイクアウトと判定しない`
+        } else if (rv < 0.5) {
+          cls = 'bv-low'; label = '━ 出来高低水準'
+          detail = `平均の${(rv * 100).toFixed(0)}% — 売買が少ない（様子見）`
+        } else {
+          cls = 'bv-normal'; label = '━ 出来高 通常水準'
+          detail = `平均の${(rv * 100).toFixed(0)}%`
+        }
+        return (
+          <div className={`breakout-vol-row ${cls}`}>
+            <span className="bv-label">{label}</span>
+            <span className="bv-detail">{detail}</span>
+          </div>
+        )
+      })()}
+
       {hasRow3 && (
         <div className="entry-timing-section">
           <div className="entry-timing-label">エントリータイミング（今日エントリーする場合の判断）</div>

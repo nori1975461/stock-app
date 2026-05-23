@@ -1974,6 +1974,50 @@ details:not([open]) .screener-results-toggle::before { content: '▶ '; }
   color: #aaa;
 }
 
+/* ─── ブレイクアウト出来高ステータス行 ────────── */
+.breakout-vol-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px;
+  margin: 4px 0;
+  border-radius: 6px;
+  border-left: 4px solid transparent;
+}
+.bv-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.bv-detail {
+  font-size: 0.75rem;
+  opacity: 0.82;
+}
+.bv-breakout {
+  background: rgba(39,174,96,0.12);
+  border-left-color: #27ae60;
+  color: #2ecc71;
+}
+.bv-sell {
+  background: rgba(192,60,60,0.12);
+  border-left-color: #c03c3c;
+  color: #e08080;
+}
+.bv-danger {
+  background: rgba(200,80,0,0.12);
+  border-left-color: #e07020;
+  color: #e09050;
+}
+.bv-mild {
+  background: rgba(180,150,20,0.10);
+  border-left-color: #b09020;
+  color: #c8b050;
+}
+.bv-low, .bv-normal {
+  background: rgba(120,120,120,0.08);
+  border-left-color: #555;
+  color: #888;
+}
+
 /* ─── エントリータイミングセクション ────────── */
 .entry-timing-section {
   margin: 4px 0 8px;
