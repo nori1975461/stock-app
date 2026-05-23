@@ -3492,6 +3492,106 @@ details[open] .leader-dormant-title::before { content: '▼ '; }
   color: #888;
 }
 
+/* ── ポジションサイジング（1〜2%ルール）─────────────────── */
+.ps-section {
+  background: #1e1a10;
+  border: 1px solid #5a4a1a;
+  border-radius: 8px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.ps-title {
+  background: #2a2010;
+  color: #d4a84b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #5a4a1a;
+}
+.ps-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 4px;
+}
+.ps-input-label { color: #aaa; font-size: 0.82rem; flex-shrink: 0; }
+.ps-input {
+  flex: 1;
+  background: #12100a;
+  border: 1px solid #6a5a2a;
+  border-radius: 5px;
+  color: #e8d090;
+  font-size: 0.88rem;
+  padding: 5px 8px;
+  min-width: 0;
+  text-align: right;
+}
+.ps-input:focus { outline: none; border-color: #c4902a; }
+.ps-input-unit { color: #888; font-size: 0.80rem; flex-shrink: 0; }
+.ps-risk-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 6px;
+}
+.ps-risk-label { color: #aaa; font-size: 0.80rem; margin-right: 2px; }
+.ps-risk-btn {
+  padding: 3px 12px;
+  background: #2a2010;
+  border: 1px solid #5a4a1a;
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.80rem;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.ps-risk-btn.active {
+  background: #5a3a08;
+  border-color: #c4902a;
+  color: #e8c060;
+  font-weight: 700;
+}
+.ps-rows { padding: 4px 0 2px; }
+.ps-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+}
+.ps-row-shares { background: rgba(212, 168, 75, 0.08); }
+.ps-label { color: #aaa; flex-shrink: 0; }
+.ps-val   { color: #ccc; text-align: right; }
+.ps-shares-val {
+  color: #e8c060;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.ps-badge {
+  margin: 8px 14px 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+}
+.ps-safe {
+  background: rgba(39, 174, 96, 0.18);
+  color: #2ecc71;
+  border: 1px solid #27ae60;
+}
+.ps-warn {
+  background: rgba(230, 150, 30, 0.18);
+  color: #e8a030;
+  border: 1px solid #c07820;
+}
+.ps-hint {
+  padding: 10px 14px 12px;
+  color: #777;
+  font-size: 0.78rem;
+}
+
 /* ── 52週高値との距離（O'Neil基準）──────────────────────── */
 .wh52-section {
   background: #1a1a2a;

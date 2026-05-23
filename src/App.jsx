@@ -294,6 +294,95 @@ function WeekHigh52Display({ ticker, p }) {
   )
 }
 
+function PositionSizingDisplay({ ticker, p }) {
+  const STORAGE_KEY = 'ct_account_balance'
+  const [inputVal, setInputVal] = useState(() => localStorage.getItem(STORAGE_KEY) || '')
+  const [balance,  setBalance]  = useState(() => Number(localStorage.getItem(STORAGE_KEY)) || 0)
+  const [riskPct,  setRiskPct]  = useState(1)
+
+  const rr = calcRiskReward(p)
+  if (!rr) return null
+
+  const isJP   = ticker?.endsWith('.T')
+  const fmtAmt = v => isJP ? Math.round(v).toLocaleString() + '円' : v.toFixed(2) + 'USD'
+
+  const saveBalance = () => {
+    const num = Number(String(inputVal).replace(/,/g, ''))
+    if (num > 0) { localStorage.setItem(STORAGE_KEY, String(num)); setBalance(num) }
+  }
+
+  let calc = null
+  if (balance > 0) {
+    const riskPerShare = rr.entry - rr.stopPrice
+    if (riskPerShare > 0) {
+      const maxRisk    = balance * riskPct / 100
+      const shares     = Math.floor(maxRisk / riskPerShare)
+      const totalCost  = shares * rr.entry
+      const positionPct = (totalCost / balance) * 100
+      calc = { maxRisk: +maxRisk.toFixed(0), riskPerShare: +riskPerShare.toFixed(2), shares, totalCost: +totalCost.toFixed(0), positionPct: +positionPct.toFixed(1) }
+    }
+  }
+
+  return (
+    <div className="ps-section">
+      <div className="ps-title">ポジションサイジング（1〜2%ルール）</div>
+
+      <div className="ps-input-row">
+        <span className="ps-input-label">口座資金</span>
+        <input
+          className="ps-input"
+          type="text"
+          inputMode="numeric"
+          placeholder="例：5000000"
+          value={inputVal}
+          onChange={e => setInputVal(e.target.value)}
+          onBlur={saveBalance}
+          onKeyDown={e => e.key === 'Enter' && saveBalance()}
+        />
+        <span className="ps-input-unit">{isJP ? '円' : 'USD'}</span>
+      </div>
+
+      <div className="ps-risk-toggle">
+        <span className="ps-risk-label">リスク許容</span>
+        <button className={`ps-risk-btn ${riskPct === 1 ? 'active' : ''}`} onClick={() => setRiskPct(1)}>1%</button>
+        <button className={`ps-risk-btn ${riskPct === 2 ? 'active' : ''}`} onClick={() => setRiskPct(2)}>2%</button>
+      </div>
+
+      {calc && calc.shares > 0 ? (
+        <>
+          <div className="ps-rows">
+            <div className="ps-row">
+              <span className="ps-label">1株あたりリスク</span>
+              <span className="ps-val">{fmtAmt(calc.riskPerShare)}</span>
+            </div>
+            <div className="ps-row">
+              <span className="ps-label">最大許容損失</span>
+              <span className="ps-val val-down">{fmtAmt(calc.maxRisk)}（口座の{riskPct}%）</span>
+            </div>
+            <div className="ps-row ps-row-shares">
+              <span className="ps-label">推奨株数</span>
+              <span className="ps-val ps-shares-val">{calc.shares.toLocaleString()} 株</span>
+            </div>
+            <div className="ps-row">
+              <span className="ps-label">必要資金</span>
+              <span className="ps-val">{fmtAmt(calc.totalCost)}（口座の{calc.positionPct}%）</span>
+            </div>
+          </div>
+          <div className={`ps-badge ${calc.positionPct <= 30 ? 'ps-safe' : 'ps-warn'}`}>
+            {calc.positionPct <= 30
+              ? `✅ 適正ポジション（口座の${calc.positionPct}%）— CT基準クリア`
+              : `⚠ 集中しすぎ（口座の${calc.positionPct}%）— 株数を減らして再検討`}
+          </div>
+        </>
+      ) : balance > 0 ? (
+        <div className="ps-hint">株数が0になります。口座資金を確認してください。</div>
+      ) : (
+        <div className="ps-hint">口座資金を入力すると推奨株数を計算します（入力値はこのブラウザに保存されます）</div>
+      )}
+    </div>
+  )
+}
+
 function RiskRewardDisplay({ ticker, p }) {
   const rr = calcRiskReward(p)
   if (!rr) return null
@@ -2029,6 +2118,8 @@ function DetailCard({ item, onClose }) {
 
       <RiskRewardDisplay ticker={item.ticker} p={p} />
 
+      <PositionSizingDisplay ticker={item.ticker} p={p} />
+
       <ExitPanel p={p} />
 
       {p.forecast && (
@@ -2433,6 +2524,8 @@ export default function App() {
           <WeekHigh52Display ticker={result.ticker} p={result} />
 
           <RiskRewardDisplay ticker={result.ticker} p={result} />
+
+          <PositionSizingDisplay ticker={result.ticker} p={result} />
 
           <ExitPanel p={result} />
 
