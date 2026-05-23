@@ -22,6 +22,7 @@ export const CT_UNIVERSE = [
   { ticker: '6254.T', name: '野村マイクロ・サイエンス', sector: '電子部品・半導体' },
   { ticker: '7735.T', name: 'SCREENホールディングス',  sector: '電子部品・半導体' },
   { ticker: '6525.T', name: 'KOKUSAI ELECTRIC',        sector: '電子部品・半導体' },
+  { ticker: '6976.T', name: '太陽誘電',                 sector: '電子部品・半導体' },
 
   // ━━ 通信（マクロスコア +2）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '9984.T', name: 'ソフトバンクグループ',    sector: '通信' },
