@@ -182,7 +182,7 @@ function calcLeaderActivityState(p) {
     p.direction === 'UP' &&
     p.stableScore >= 3 &&
     p.obvTrend === 'UP' &&
-    (p.relativeVolume > 1.3 || p.magnetEffect?.status === 'NEW_HIGH' || p.magnetEffect?.status === 'BREAKOUT')
+    (p.relativeVolume > 1.4 || p.magnetEffect?.status === 'NEW_HIGH' || p.magnetEffect?.status === 'BREAKOUT')
   ) return 'LEADING'
   if (p.isStagnating && p.stableScore >= 0) return 'BASING'
   return 'WATCHING'
@@ -1584,10 +1584,10 @@ function computeEntryJudgment(p) {
     desc: 'UPトレンド＋保有継続シグナル — エントリー条件を満たしています（安定スコアが+2未満のため強推奨には至らず）' }
 
   // 条件1：規律可能性の高い銘柄を出来高と方向性が揃うタイミングで買う
-  // relativeVolume > 1.3 はCTスコアリング閾値と一致（「資金流入の強い買い」判定ライン）
+  // relativeVolume > 1.4 はO'Neil基準（+40%以上）に統一済み
   // obvTrend UP で15日間の持続的機関投資家買いを確認（単日スパイクとの差別化）
   const cond1 = (p.disciplinaryPct ?? 0) >= 70
-             && (p.relativeVolume ?? 0) > 1.3
+             && (p.relativeVolume ?? 0) > 1.4
              && p.obvTrend === 'UP'
   // 条件2：初速超高速かつ2日目確認済み（CT理論が定義する最強エントリーシグナル）
   const cond2 = iv?.level === 'VERY_HIGH' && iv?.isAligned && iv?.currentDir > 0
