@@ -6,7 +6,7 @@
 //  - AI・半導体・デジタルインフラのサプライチェーンに連なる銘柄
 //  - 米国「先導株」（NVDA等）の波及先となる国内銘柄を網羅
 
-// ── CT銘柄ユニバース（全スキャン対象：約124銘柄）────────────────────────
+// ── CT銘柄ユニバース（全スキャン対象：約130銘柄）────────────────────────
 export const CT_UNIVERSE = [
 
   // ━━ 電子部品・半導体（マクロスコア +2 ／ CT最重点セクター）━━━━━━━━━━━
@@ -15,6 +15,7 @@ export const CT_UNIVERSE = [
   { ticker: '8035.T', name: '東京エレクトロン',        sector: '電子部品・半導体' },
   { ticker: '6920.T', name: 'レーザーテック',          sector: '電子部品・半導体' },
   { ticker: '6146.T', name: 'ディスコ',                sector: '電子部品・半導体' },
+  { ticker: '3132.T', name: 'マクニカHD',              sector: '電子部品・半導体' },
   { ticker: '6861.T', name: 'キーエンス',              sector: '電子部品・半導体' },
   { ticker: '6762.T', name: 'TDK',                     sector: '電子部品・半導体' },
   { ticker: '6981.T', name: '村田製作所',              sector: '電子部品・半導体' },
@@ -76,6 +77,8 @@ export const CT_UNIVERSE = [
   { ticker: '6645.T', name: 'オムロン',                sector: '機械' },
   { ticker: '6383.T', name: 'ダイフク',                sector: '機械' },
   { ticker: '6305.T', name: '日立建機',                sector: '機械' },
+  { ticker: '6141.T', name: 'DMG森精機',               sector: '機械' },
+  { ticker: '6268.T', name: 'ナブテスコ',              sector: '機械' },
 
   // ━━ 重工業（防衛・宇宙需要）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '7011.T', name: '三菱重工業',              sector: '重工業' },
@@ -88,6 +91,8 @@ export const CT_UNIVERSE = [
   { ticker: '3407.T', name: '旭化成',                  sector: '化学' },
   { ticker: '4182.T', name: '三菱ガス化学',            sector: '化学' },
   { ticker: '4203.T', name: '住友ベークライト',        sector: '化学' },
+  { ticker: '3402.T', name: '東レ',                    sector: '化学' },
+  { ticker: '4205.T', name: '日本ゼオン',              sector: '化学' },
 
   // ━━ ガラス・セメント（マクロスコア 0）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '3110.T', name: '日東紡績',                sector: 'ガラス・セメント' },
@@ -118,6 +123,7 @@ export const CT_UNIVERSE = [
   { ticker: '4661.T', name: 'オリエンタルランド',      sector: 'エンタメ・ゲーム' },
   { ticker: '7832.T', name: 'バンダイナムコHD',        sector: 'エンタメ・ゲーム' },
   { ticker: '9766.T', name: 'コナミHD',                sector: 'エンタメ・ゲーム' },
+  { ticker: '9697.T', name: 'カプコン',                sector: 'エンタメ・ゲーム' },
 
   // ━━ 医薬品（バイオAI）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '4519.T', name: '中外製薬',                sector: '医薬品' },
