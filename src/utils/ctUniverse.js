@@ -56,22 +56,24 @@ export const CT_UNIVERSE = [
   { ticker: '4751.T', name: 'サイバーエージェント',    sector: 'IT・情報サービス' },
   { ticker: '4307.T', name: '野村総合研究所',          sector: 'IT・情報サービス' },
 
-  // ━━ 精密機器（マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ━━ 精密機器（光学・半導体関連、マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '7741.T', name: 'HOYA',                    sector: '精密機器' },
   { ticker: '7751.T', name: 'キヤノン',                sector: '精密機器' },
-  { ticker: '6841.T', name: '横河電機',                sector: '精密機器' },
-  { ticker: '6645.T', name: 'オムロン',                sector: '精密機器' },
-  { ticker: '4543.T', name: 'テルモ',                  sector: '精密機器' },
-  { ticker: '7733.T', name: 'オリンパス',              sector: '精密機器' },
-  { ticker: '6869.T', name: 'シスメックス',            sector: '精密機器' },
   { ticker: '7731.T', name: 'ニコン',                  sector: '精密機器' },
 
-  // ━━ 機械（マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ━━ 医療機器（マクロスコア 0）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  { ticker: '4543.T', name: 'テルモ',                  sector: '医療機器' },
+  { ticker: '7733.T', name: 'オリンパス',              sector: '医療機器' },
+  { ticker: '6869.T', name: 'シスメックス',            sector: '医療機器' },
+
+  // ━━ 機械（FA・自動化・産業機械、マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '6273.T', name: 'SMC',                     sector: '機械' },
   { ticker: '6367.T', name: 'ダイキン工業',            sector: '機械' },
   { ticker: '6301.T', name: 'コマツ',                  sector: '機械' },
   { ticker: '6326.T', name: 'クボタ',                  sector: '機械' },
   { ticker: '6954.T', name: 'ファナック',              sector: '機械' },
+  { ticker: '6841.T', name: '横河電機',                sector: '機械' },
+  { ticker: '6645.T', name: 'オムロン',                sector: '機械' },
   { ticker: '6383.T', name: 'ダイフク',                sector: '機械' },
   { ticker: '6305.T', name: '日立建機',                sector: '機械' },
 
