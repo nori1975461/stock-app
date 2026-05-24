@@ -6,7 +6,7 @@
 //  - AI・半導体・デジタルインフラのサプライチェーンに連なる銘柄
 //  - 米国「先導株」（NVDA等）の波及先となる国内銘柄を網羅
 
-// ── CT銘柄ユニバース（全スキャン対象：約101銘柄）────────────────────────
+// ── CT銘柄ユニバース（全スキャン対象：約110銘柄）────────────────────────
 export const CT_UNIVERSE = [
 
   // ━━ 電子部品・半導体（マクロスコア +2 ／ CT最重点セクター）━━━━━━━━━━━
@@ -29,6 +29,7 @@ export const CT_UNIVERSE = [
   { ticker: '6963.T', name: 'ローム',                    sector: '電子部品・半導体' },
   { ticker: '6806.T', name: 'ヒロセ電機',                sector: '電子部品・半導体' },
   { ticker: '6996.T', name: 'ニチコン',                  sector: '電子部品・半導体' },
+  { ticker: '3436.T', name: 'SUMCO',                     sector: '電子部品・半導体' },
 
   // ━━ 通信（マクロスコア +2）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '9984.T', name: 'ソフトバンクグループ',    sector: '通信' },
@@ -60,6 +61,7 @@ export const CT_UNIVERSE = [
   { ticker: '6645.T', name: 'オムロン',                sector: '精密機器' },
   { ticker: '4543.T', name: 'テルモ',                  sector: '精密機器' },
   { ticker: '7733.T', name: 'オリンパス',              sector: '精密機器' },
+  { ticker: '6869.T', name: 'シスメックス',            sector: '精密機器' },
 
   // ━━ 機械（マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '6273.T', name: 'SMC',                     sector: '機械' },
@@ -99,12 +101,15 @@ export const CT_UNIVERSE = [
   // ━━ エンタメ・ゲーム（CT先導株候補）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '7974.T', name: '任天堂',                  sector: 'エンタメ・ゲーム' },
   { ticker: '4661.T', name: 'オリエンタルランド',      sector: 'エンタメ・ゲーム' },
+  { ticker: '7832.T', name: 'バンダイナムコHD',        sector: 'エンタメ・ゲーム' },
 
   // ━━ 医薬品（バイオAI）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '4519.T', name: '中外製薬',                sector: '医薬品' },
   { ticker: '4568.T', name: '第一三共',                sector: '医薬品' },
   { ticker: '4503.T', name: 'アステラス製薬',           sector: '医薬品' },
   { ticker: '4502.T', name: '武田薬品工業',             sector: '医薬品' },
+  { ticker: '4578.T', name: '大塚HD',                  sector: '医薬品' },
+  { ticker: '4528.T', name: '小野薬品工業',             sector: '医薬品' },
 
   // ━━ データセンター・AIインフラ（電力・冷却・建設）━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '9531.T', name: '東京ガス',                sector: 'データセンター・電力' },
@@ -114,6 +119,7 @@ export const CT_UNIVERSE = [
   { ticker: '1801.T', name: '大成建設',                sector: 'データセンター・建設' },
   { ticker: '1803.T', name: '清水建設',                sector: 'データセンター・建設' },
   { ticker: '9502.T', name: '中部電力',                sector: 'データセンター・電力' },
+  { ticker: '9532.T', name: '大阪ガス',                sector: 'データセンター・電力' },
   { ticker: '1812.T', name: '鹿島建設',                sector: 'データセンター・建設' },
   { ticker: '1802.T', name: '大林組',                  sector: 'データセンター・建設' },
 
@@ -128,11 +134,13 @@ export const CT_UNIVERSE = [
   { ticker: '7203.T', name: 'トヨタ自動車',            sector: '自動車' },
   { ticker: '7267.T', name: 'ホンダ',                  sector: '自動車' },
   { ticker: '6902.T', name: 'デンソー',                sector: '自動車' },
+  { ticker: '5108.T', name: 'ブリヂストン',            sector: '自動車' },
 
   // ━━ 不動産（金利感応・相場転換の先行指標）━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '8802.T', name: '三菱地所',                sector: '不動産' },
   { ticker: '8801.T', name: '三井不動産',              sector: '不動産' },
   { ticker: '8830.T', name: '住友不動産',              sector: '不動産' },
+  { ticker: '1925.T', name: '大和ハウス工業',          sector: '不動産' },
 
   // ━━ 米国株（CT先導株・2024-2026年の市場牽引銘柄）━━━━━━━━━━━━━━━━━━━━━
   { ticker: 'NVDA',   name: 'NVIDIA',                  sector: '米国半導体' },
@@ -147,6 +155,7 @@ export const CT_UNIVERSE = [
   { ticker: 'AMZN',   name: 'Amazon',                  sector: '米国テック' },
   { ticker: 'TSLA',   name: 'Tesla',                   sector: '米国テック' },
   { ticker: 'ORCL',   name: 'Oracle',                  sector: '米国テック' },
+  { ticker: 'MU',     name: 'Micron Technology',        sector: '米国半導体' },
 ]
 
 // ── 先導株リスト（市場を牽引する銘柄・CT理論研究に基づく 2026年5月調査）────
