@@ -291,9 +291,9 @@ export const SECTOR_BAROMETERS = [
   // IT・情報サービス：B2C人材・消費 × B2C法人IT
   { ticker: '6098.T', name: 'リクルートHD',         sector: 'IT・情報サービス', region: 'JP' },
   { ticker: '9613.T', name: 'NTTデータグループ',    sector: 'IT・情報サービス', region: 'JP' },
-  // 精密機器：光学・半導体材料 × FA・ロボット
+  // 精密機器：半導体材料・光学 × 光学・半導体露光装置
   { ticker: '7741.T', name: 'HOYA',                sector: '精密機器',          region: 'JP' },
-  { ticker: '6954.T', name: 'ファナック',            sector: '精密機器',          region: 'JP' },
+  { ticker: '7751.T', name: 'キヤノン',              sector: '精密機器',          region: 'JP' },
   // 機械：空圧・制御（国内工場向け）× 空調（グローバル需要）
   { ticker: '6273.T', name: 'SMC',                 sector: '機械',              region: 'JP' },
   { ticker: '6367.T', name: 'ダイキン工業',          sector: '機械',              region: 'JP' },
