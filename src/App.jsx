@@ -1217,6 +1217,7 @@ function LeaderPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
 // ── CTスクリーニングパネル ──────────────────────────────────────────────────
 const SCREENER_CACHE_KEY    = 'ct_screener_cache'
 const SCREENER_CACHE_EXPIRE = 8 * 60 * 60 * 1000  // 8時間
+const CT_UNIVERSE_CHECKSUM  = CT_UNIVERSE.map(s => `${s.ticker}:${s.sector}`).join(',')
 const ACTIVE_MIN_STABLE     = 1                    // アクティブ候補の安定スコア閾値
 
 function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade }) {
@@ -1228,6 +1229,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
       if (!raw) return null
       const c = JSON.parse(raw)
       if (Date.now() - c.timestamp > SCREENER_CACHE_EXPIRE) return null
+      if (c.universeChecksum !== CT_UNIVERSE_CHECKSUM) return null
       return c
     } catch { return null }
   }
@@ -1311,11 +1313,12 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
     // キャッシュ保存（chartDataを除いてサイズ削減）
     try {
       localStorage.setItem(SCREENER_CACHE_KEY, JSON.stringify({
-        timestamp:    now,
-        scannedCount: allResults.length,
-        sectorTops:   sectorTopList,
-        results:      top10.map(stripChart),
-        fullResults:  sorted.map(stripChart),
+        timestamp:       now,
+        universeChecksum: CT_UNIVERSE_CHECKSUM,
+        scannedCount:    allResults.length,
+        sectorTops:      sectorTopList,
+        results:         top10.map(stripChart),
+        fullResults:     sorted.map(stripChart),
       }))
     } catch {}
 
