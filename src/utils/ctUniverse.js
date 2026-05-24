@@ -6,7 +6,7 @@
 //  - AI・半導体・デジタルインフラのサプライチェーンに連なる銘柄
 //  - 米国「先導株」（NVDA等）の波及先となる国内銘柄を網羅
 
-// ── CT銘柄ユニバース（全スキャン対象：約123銘柄）────────────────────────
+// ── CT銘柄ユニバース（全スキャン対象：約121銘柄）────────────────────────
 export const CT_UNIVERSE = [
 
   // ━━ 電子部品・半導体（マクロスコア +2 ／ CT最重点セクター）━━━━━━━━━━━
@@ -55,7 +55,6 @@ export const CT_UNIVERSE = [
   { ticker: '6098.T', name: 'リクルートHD',            sector: 'IT・情報サービス' },
   { ticker: '4751.T', name: 'サイバーエージェント',    sector: 'IT・情報サービス' },
   { ticker: '4307.T', name: '野村総合研究所',          sector: 'IT・情報サービス' },
-  { ticker: '4324.T', name: '電通グループ',             sector: 'IT・情報サービス' },
 
   // ━━ 精密機器（マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '7741.T', name: 'HOYA',                    sector: '精密機器' },
@@ -87,7 +86,6 @@ export const CT_UNIVERSE = [
   { ticker: '4452.T', name: '花王',                    sector: '化学' },
   { ticker: '3407.T', name: '旭化成',                  sector: '化学' },
   { ticker: '5201.T', name: 'AGC',                     sector: '化学' },
-  { ticker: '4188.T', name: '三菱ケミカルグループ',    sector: '化学' },
 
   // ━━ 総合商社（資源×AI投資）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '8001.T', name: '伊藤忠商事',              sector: '総合商社' },
@@ -100,7 +98,7 @@ export const CT_UNIVERSE = [
   { ticker: '8306.T', name: '三菱UFJ FG',              sector: '銀行' },
   { ticker: '8316.T', name: '三井住友FG',              sector: '銀行' },
   { ticker: '8411.T', name: 'みずほFG',                sector: '銀行' },
-  { ticker: '8604.T', name: '野村ホールディングス',    sector: '銀行' },
+  { ticker: '8604.T', name: '野村ホールディングス',    sector: '金融・証券' },
 
   // ━━ 非鉄金属（マクロスコア +1）━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   { ticker: '5713.T', name: '住友金属鉱山',            sector: '非鉄金属' },
@@ -153,7 +151,7 @@ export const CT_UNIVERSE = [
   { ticker: '8801.T', name: '三井不動産',              sector: '不動産' },
   { ticker: '8830.T', name: '住友不動産',              sector: '不動産' },
   { ticker: '1925.T', name: '大和ハウス工業',          sector: '不動産' },
-  { ticker: '1928.T', name: '積水ハウス',              sector: '不動産' },
+  { ticker: '1928.T', name: '積水ハウス',              sector: '住宅建設' },
 
   // ━━ 米国株（CT先導株・2024-2026年の市場牽引銘柄）━━━━━━━━━━━━━━━━━━━━━
   { ticker: 'NVDA',   name: 'NVIDIA',                  sector: '米国半導体' },
