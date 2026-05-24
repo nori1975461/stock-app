@@ -2188,6 +2188,52 @@ details:not([open]) .screener-results-toggle::before { content: '▶ '; }
   margin-top: 2px;
 }
 
+/* 折りたたみヘッダー */
+.phase-collapse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(180,140,60,0.35);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 10px;
+  transition: background 0.15s;
+}
+.phase-collapse-header:hover {
+  background: rgba(0,0,0,0.28);
+}
+.phase-collapse-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.8);
+  font-weight: 600;
+}
+.phase-collapse-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.phase-tag-easy   { background: #2a8040; color: #fff; }
+.phase-tag-normal { background: #2a50a8; color: #fff; }
+.phase-tag-hard   { background: #902818; color: #fff; }
+.phase-collapse-stat {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.55);
+  font-weight: 400;
+}
+.phase-collapse-icon {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.55);
+  flex-shrink: 0;
+}
+
 /* セクションタイトル */
 .phase-section-title {
   font-size: 0.8rem;

@@ -672,6 +672,7 @@ function MarketPhasePanel({ gasUrl, onSelectTicker, onPhaseResolved }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [results, setResults]         = useState(null)
   const [error, setError]             = useState(null)
+  const [isOpen, setIsOpen]           = useState(true)
 
   const JP_TOTAL = SECTOR_BAROMETERS.filter(s => s.region === 'JP').length
 
@@ -767,6 +768,18 @@ function MarketPhasePanel({ gasUrl, onSelectTicker, onPhaseResolved }) {
 
       {results && (
         <>
+          <div className="phase-collapse-header" onClick={() => setIsOpen(v => !v)}>
+            <span className="phase-collapse-label">
+              スキャン結果：
+              <span className={`phase-collapse-badge phase-tag-${results.overallPhase.toLowerCase()}`}>
+                {results.overallPhase === 'EASY' ? 'EASY相場' : results.overallPhase === 'HARD' ? 'HARD相場' : 'NORMAL相場'}
+              </span>
+              <span className="phase-collapse-stat">（米国 {results.usUpCount}/{results.usWithPred.length} UP ／ 日本 {results.jpUpCount}/{results.jpTotal} UP）</span>
+            </span>
+            <span className="phase-collapse-icon">{isOpen ? '▲' : '▼'}</span>
+          </div>
+          {isOpen && (
+          <>
           {/* 総合相場フェーズ */}
           <div className={`phase-overall phase-overall-${results.overallPhase.toLowerCase()}`}>
             <div className="phase-overall-label">相場環境</div>
@@ -887,6 +900,8 @@ function MarketPhasePanel({ gasUrl, onSelectTicker, onPhaseResolved }) {
           <p className="disclaimer" style={{ marginTop: 12 }}>
             ※ 相場環境判断はCT理論に基づく参考情報です。投資判断の最終責任はご自身にあります。
           </p>
+          </>
+          )}
         </>
       )}
     </div>
