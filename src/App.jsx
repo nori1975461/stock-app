@@ -842,7 +842,7 @@ function MarketPhasePanel({ gasUrl, onSelectTicker, onPhaseResolved }) {
                     <div className="phase-jp-ticker-name">
                       {sec.stocks.map((s, si) => (
                         <span key={s.ticker} className={si === 0 ? 'phase-jp-ticker' : 'phase-jp-ticker-sub'}>
-                          {s.ticker}
+                          {s.name}
                           {sec.stocks.length > 1 && (
                             <span className={s.prediction.stableScore >= 0 ? 'phase-jp-sub-score-up' : 'phase-jp-sub-score-down'}>
                               {s.prediction.stableScore > 0 ? '+' : ''}{s.prediction.stableScore}
