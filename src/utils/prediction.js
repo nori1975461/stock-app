@@ -127,6 +127,31 @@ function detectVCPPattern(closes, volumes, lookback = 40) {
   }
 }
 
+// 鉄板パターン4（出来高復活再パターン）CT理論 Mr.K「ほぼ必ず上昇」
+// ベースライン→ドライアップ→出来高復活＋価格上昇 の3フェーズを確認
+function detectVolumeRecoveryPattern(closes, volumes, recentDays = 5, dryUpDays = 10, baselineDays = 15) {
+  const n = volumes.length
+  if (n < baselineDays + dryUpDays + recentDays) return false
+
+  const baselineVols = volumes.slice(n - baselineDays - dryUpDays - recentDays, n - dryUpDays - recentDays).filter(v => v > 0)
+  if (baselineVols.length < 5) return false
+  const baselineAvg = baselineVols.reduce((a, b) => a + b, 0) / baselineVols.length
+  if (baselineAvg === 0) return false
+
+  const dryUpVols = volumes.slice(n - dryUpDays - recentDays, n - recentDays).filter(v => v > 0)
+  if (dryUpVols.length < 3) return false
+  const dryUpAvg = dryUpVols.reduce((a, b) => a + b, 0) / dryUpVols.length
+  if (dryUpAvg >= baselineAvg * 0.55) return false
+
+  const recentVols = volumes.slice(n - recentDays).filter(v => v > 0)
+  if (recentVols.length < 2) return false
+  const recentAvg = recentVols.reduce((a, b) => a + b, 0) / recentVols.length
+  if (recentAvg < baselineAvg * 0.85) return false
+
+  const recentCloses = closes.slice(n - recentDays)
+  return recentCloses[recentCloses.length - 1] > recentCloses[0]
+}
+
 // 52週高値との距離（O'Neil基準：高値の15%以内にある銘柄のみ買い候補）
 // lookback=250 ≈ 約1年分の営業日
 function calc52WeekHigh(closes, lookback = 250) {
@@ -459,6 +484,7 @@ function calcStableScoreOnly(prices) {
 
   if (hasVol && detectStagnation(closes, volumes, 5)) s += 1
   if (hasVol && detectVCPPattern(closes, volumes, 40)?.isVCP) s += 1
+  if (hasVol && detectVolumeRecoveryPattern(closes, volumes)) s += 2
 
   const mag = calcMagnetEffect(closes, 90)
   if (mag.status === 'NEW_HIGH' || mag.status === 'BREAKOUT') s += 2
@@ -672,6 +698,14 @@ export function predict(allPrices, days, macroAdjust = null) {
     signals.push(`VCP確認（${contStr}${rangeStr}）：40日かけた出来高ドライアップ→売り手枯渇・BASING形成完了`)
   }
 
+  // ── 鉄板パターン4（出来高復活再パターン）─────────────────────
+  const isVolumeRecovery = hasVolume ? detectVolumeRecoveryPattern(closes, volumes) : false
+
+  if (isVolumeRecovery) {
+    score += 2; stableScore += 2
+    signals.push('🔥 鉄板パターン4：出来高が枯渇後に復活しながら上昇再開→Mr.K「ほぼ必ず上昇」の最強シグナル')
+  }
+
   // ── マグネット効果（過去高値との位置関係）─────────────────
   const magnetEffect = calcMagnetEffect(closes, 90)
 
@@ -855,6 +889,7 @@ export function predict(allPrices, days, macroAdjust = null) {
     obvTrend,
     isStagnating,
     vcpPattern,
+    isVolumeRecovery,
     weekHigh52: calc52WeekHigh(closes, 250),
     magnetEffect,
     hasVolume,

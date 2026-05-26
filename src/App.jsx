@@ -1455,7 +1455,8 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                 const p        = item.prediction
                 const isActive = p.direction === 'UP' && p.stableScore >= ACTIVE_MIN_STABLE
                 const isLeader = CT_LEADERS.some(l => l.ticker === item.ticker)
-                const isVCP    = p.vcpPattern?.isVCP
+                const isVCP              = p.vcpPattern?.isVCP
+                const isVolumeRecovery   = p.isVolumeRecovery
                 return (
                   <Fragment key={item.ticker}>
                     {!vcpFilterActive && thresholdIdx > 0 && i === thresholdIdx && (
@@ -1463,7 +1464,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                         ── アクティブ候補ライン（以下は監視のみ・エントリー不推奨） ──
                       </div>
                     )}
-                    <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''} ${isLeader ? 'screener-item-leader' : ''} ${isVCP ? 'screener-item-vcp' : ''}`}>
+                    <div className={`screener-item ${i === 0 && isActive ? 'screener-item-top' : ''} ${!isActive ? 'screener-item-watch' : ''} ${isLeader ? 'screener-item-leader' : ''} ${isVCP ? 'screener-item-vcp' : ''} ${isVolumeRecovery ? 'screener-item-volrecovery' : ''}`}>
                       <div className="screener-rank">{RANK_LABELS[i] ?? `${i + 1}`}</div>
                       <div className="screener-body">
                         <div className="screener-name-row">
@@ -1471,6 +1472,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                           <span className="screener-name">{item.name}</span>
                           <span className="screener-sector">{item.sector}</span>
                           {isVCP && <span className="screener-vcp-badge">🟢 VCP</span>}
+                          {isVolumeRecovery && <span className="screener-volrecovery-badge">🔥 鉄板4</span>}
                           {isLeader && <span className="screener-leader-badge">★ 先導株</span>}
                           {isLeader && <LeaderActivityBadge p={p} />}
                           {!isActive && <span className="screener-watch-badge">監視</span>}

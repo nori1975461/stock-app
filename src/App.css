@@ -1423,6 +1423,22 @@ h1 {
   border-left: 3px solid #27ae60 !important;
 }
 
+.screener-volrecovery-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  background: rgba(230, 80, 20, 0.18);
+  color: #ff6b35;
+  border: 1px solid #e65014;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.screener-item-volrecovery {
+  border-left: 3px solid #e65014 !important;
+}
+
 .screener-vcp-empty {
   padding: 18px 16px;
   color: #888;
