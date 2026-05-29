@@ -1245,6 +1245,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
   const [cachedAt, setCachedAt]       = useState(initCache?.timestamp  || null)
   const [error, setError]             = useState(null)
   const [vcpFilterActive, setVcpFilterActive] = useState(false)
+  const [volRecoveryFilterActive, setVolRecoveryFilterActive] = useState(false)
 
   const formatAge = (ts) => {
     const m = Math.floor((Date.now() - ts) / 60000)
@@ -1338,7 +1339,19 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
         .filter(item => item.prediction.vcpPattern?.isVCP)
         .sort((a, b) => b.prediction.stableScore - a.prediction.stableScore)
     : null
-  const displayResults = vcpFilterActive ? (vcpResults || []) : results
+
+  // 鉄板4フィルター：全スキャン結果から鉄板パターン4銘柄を抽出（安定スコア降順）
+  const volRecoveryResults = volRecoveryFilterActive
+    ? (fullResults || results || [])
+        .filter(item => item.prediction.isVolumeRecovery)
+        .sort((a, b) => b.prediction.stableScore - a.prediction.stableScore)
+    : null
+
+  const displayResults = vcpFilterActive
+    ? (vcpResults || [])
+    : volRecoveryFilterActive
+      ? (volRecoveryResults || [])
+      : results
 
   const topTickers = displayResults ? displayResults.slice(0, 10).map(r => r.ticker).join(',') : ''
 
@@ -1363,9 +1376,17 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
           {results && !isScanning && (
             <button
               className={`btn-vcp-filter ${vcpFilterActive ? 'vcp-filter-active' : ''}`}
-              onClick={() => setVcpFilterActive(v => !v)}
+              onClick={() => { setVcpFilterActive(v => !v); setVolRecoveryFilterActive(false) }}
             >
               🟢 VCP確認のみ
+            </button>
+          )}
+          {results && !isScanning && (
+            <button
+              className={`btn-vcp-filter btn-volrecovery-filter ${volRecoveryFilterActive ? 'volrecovery-filter-active' : ''}`}
+              onClick={() => { setVolRecoveryFilterActive(v => !v); setVcpFilterActive(false) }}
+            >
+              🔥 鉄板4のみ
             </button>
           )}
         </div>
@@ -1397,6 +1418,13 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
           {vcpFilterActive ? (
             <div className="screener-summary">
               🟢 VCP確認銘柄：<strong>{vcpResults?.length || 0}件</strong>
+              {fullResults
+                ? `（${scannedCount}銘柄中）`
+                : '（上位10銘柄中 — 全銘柄対象にするには再スキャンを実行）'}
+            </div>
+          ) : volRecoveryFilterActive ? (
+            <div className="screener-summary">
+              🔥 鉄板パターン4銘柄：<strong>{volRecoveryResults?.length || 0}件</strong>
               {fullResults
                 ? `（${scannedCount}銘柄中）`
                 : '（上位10銘柄中 — 全銘柄対象にするには再スキャンを実行）'}
@@ -1443,12 +1471,19 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
             <summary className="screener-results-toggle">
               {vcpFilterActive
                 ? `VCP確認銘柄 ${displayResults.length}件（安定スコア順）`
-                : 'スキャン結果 上位10銘柄'}
+                : volRecoveryFilterActive
+                  ? `🔥 鉄板パターン4銘柄 ${displayResults.length}件（安定スコア順）`
+                  : 'スキャン結果 上位10銘柄'}
             </summary>
             <div className="screener-results">
               {displayResults.length === 0 && vcpFilterActive && (
                 <div className="screener-vcp-empty">
                   VCP確認銘柄が見つかりませんでした。再スキャンで最新データを取得するか、相場がBASING形成前の可能性があります。
+                </div>
+              )}
+              {displayResults.length === 0 && volRecoveryFilterActive && (
+                <div className="screener-vcp-empty">
+                  🔥 鉄板パターン4銘柄が見つかりませんでした。再スキャンで最新データを取得してください。
                 </div>
               )}
               {displayResults.map((item, i) => {
@@ -1459,7 +1494,7 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
                 const isVolumeRecovery   = p.isVolumeRecovery
                 return (
                   <Fragment key={item.ticker}>
-                    {!vcpFilterActive && thresholdIdx > 0 && i === thresholdIdx && (
+                    {!vcpFilterActive && !volRecoveryFilterActive && thresholdIdx > 0 && i === thresholdIdx && (
                       <div className="screener-threshold-line">
                         ── アクティブ候補ライン（以下は監視のみ・エントリー不推奨） ──
                       </div>

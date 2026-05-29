@@ -1407,6 +1407,22 @@ h1 {
   box-shadow: 0 0 8px rgba(39,174,96,0.35);
 }
 
+.btn-volrecovery-filter {
+  background: #2a1a0e;
+  color: #ff8c5a;
+  border-color: #7a3510;
+}
+.btn-volrecovery-filter:hover {
+  background: #3a2010;
+  border-color: #b85020;
+}
+.btn-volrecovery-filter.volrecovery-filter-active {
+  background: rgba(230, 80, 20, 0.25);
+  color: #ff6b35;
+  border-color: #e65014;
+  box-shadow: 0 0 8px rgba(230,80,20,0.40);
+}
+
 .screener-vcp-badge {
   display: inline-block;
   padding: 1px 7px;
