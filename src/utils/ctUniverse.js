@@ -176,6 +176,7 @@ export const CT_UNIVERSE = [
   { ticker: 'AVGO',   name: 'Broadcom',                sector: '米国半導体' },
   { ticker: 'TSM',    name: 'TSMC',                    sector: '米国半導体' },
   { ticker: 'ARM',    name: 'ARM Holdings',            sector: '米国半導体' },
+  { ticker: 'MRVL',  name: 'Marvell Technology',       sector: '米国半導体' },
   { ticker: 'AAPL',   name: 'Apple',                   sector: '米国テック' },
   { ticker: 'MSFT',   name: 'Microsoft',               sector: '米国テック' },
   { ticker: 'META',   name: 'Meta',                    sector: '米国テック' },
