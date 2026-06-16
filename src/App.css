@@ -3076,6 +3076,7 @@ details:not([open]) .screener-results-toggle::before { content: '▶ '; }
 .ej-badge-icon { font-size: 1.2rem; }
 .ej-badge-label { font-size: 1rem; font-weight: 700; }
 .ej-badge-desc { font-size: 0.82rem; line-height: 1.45; margin: 0; }
+.ej-badge-timing { font-size: 0.80rem; line-height: 1.4; margin: 6px 0 0; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.08); opacity: 0.85; }
 
 .ej-badge-compact {
   display: inline-block;

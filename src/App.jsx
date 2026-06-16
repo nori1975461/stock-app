@@ -613,15 +613,19 @@ function CTMetrics({ p }) {
               <span>2日目確認</span>
               <div className="metric-val-wrap">
                 <strong className={
-                  d2.isConfirmed && d2.day1Dir > 0  ? 'val-up' :
-                  d2.isConfirmed && d2.day1Dir < 0  ? 'val-down' :
-                  !d2.isConfirmed && d2.day1Dir > 0 ? 'val-down' : 'val-up'
+                  d2.status === 'CONFIRMED'      && d2.day1Dir > 0 ? 'val-up' :
+                  d2.status === 'STALL_CONFIRMED'                  ? 'val-up' :
+                  d2.status === 'WEAK_CONFIRMED'                   ? 'val-up' :
+                  d2.status === 'CONFIRMED'      && d2.day1Dir < 0 ? 'val-down' :
+                  !d2.isConfirmed && d2.day1Dir > 0                ? 'val-down' : 'val-up'
                 }>
-                  {d2.isConfirmed
-                    ? (d2.day1Dir > 0 ? '✓ 確認済み' : '✗ 下落確定')
-                    : (d2.day1Dir > 0 ? '✗ 否定' : '△ 底打ち?')}
+                  {d2.status === 'CONFIRMED'       && d2.day1Dir > 0 ? '✓ 確認済み' :
+                   d2.status === 'CONFIRMED'       && d2.day1Dir < 0 ? '✗ 下落確定' :
+                   d2.status === 'STALL_CONFIRMED'                   ? '◎ 保合い確認' :
+                   d2.status === 'WEAK_CONFIRMED'                    ? '△ 弱い確認' :
+                   d2.day1Dir > 0                                    ? '✗ 否定' : '△ 底打ち?'}
                 </strong>
-                {!d2.isConfirmed && d2.day1Dir < 0 && (
+                {!d2.isConfirmed && d2.day1Dir < 0 && d2.status !== 'STALL_CONFIRMED' && (
                   <span className="metric-note">1日の跳ね返りかもという不確実性あり</span>
                 )}
               </div>
@@ -1723,7 +1727,7 @@ function computeEntryJudgment(p) {
   if (ss < 0)
     return { grade: 'CAUTION', label: '慎重に', icon: '△', cls: 'ej-caution',
       desc: '安定スコアがマイナス — 銘柄品質がCT基準を下回っています。見送りか小ロットで様子見を' }
-  if (d2Active && d2.day1Dir > 0 && !d2.isConfirmed)
+  if (d2Active && d2.day1Dir > 0 && !d2.isConfirmed && d2.status !== 'STALL_CONFIRMED')
     return { grade: 'CAUTION', label: '慎重に', icon: '△', cls: 'ej-caution',
       desc: '2日目確認否定 — 上昇初動が翌日に否定されました。再度の上昇シグナルを待ってください' }
 
@@ -1769,6 +1773,11 @@ function EntryJudgmentBadge({ p, compact }) {
         <span className="ej-badge-label">{ej.label}</span>
       </div>
       <p className="ej-badge-desc">{ej.desc}</p>
+      {(ej.grade === 'STRONG_BUY' || ej.grade === 'OK') && (
+        <p className="ej-badge-timing">
+          ⏰ 時間分散エントリー推奨：今日1/3・明日1/3・確認後に残り1/3（Mr.K 2026年新概念）
+        </p>
+      )}
     </div>
   )
 }
