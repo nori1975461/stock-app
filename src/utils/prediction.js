@@ -313,12 +313,25 @@ function checkDay2Confirmation(closes, prices) {
   const day2ChangePct = ((day2Close - day1Close) / day1Close) * 100
   const isConfirmed  = day1Dir === day2Dir
 
+  // CT理論：高値引けでないDay2は弱い（上ヒゲ5%超 = 引けに売り圧力あり）
+  const p2 = prices[n - 1]
+  const upperShadowPct = (p2?.high != null && p2.high > 0 && p2.close != null)
+    ? ((p2.high - p2.close) / p2.high * 100)
+    : 0
+  const isWeakDay2 = isConfirmed && day1Dir > 0 && upperShadowPct > 5
+
+  let status
+  if (isWeakDay2)       status = 'WEAK_CONFIRMED'
+  else if (isConfirmed) status = 'CONFIRMED'
+  else                  status = 'REJECTED'
+
   return {
-    status:        isConfirmed ? 'CONFIRMED' : 'REJECTED',
+    status,
     day1Dir,
     day2Dir,
-    day1ChangePct: +day1ChangePct.toFixed(2),
-    day2ChangePct: +day2ChangePct.toFixed(2),
+    day1ChangePct:  +day1ChangePct.toFixed(2),
+    day2ChangePct:  +day2ChangePct.toFixed(2),
+    upperShadowPct: +upperShadowPct.toFixed(1),
     isConfirmed,
   }
 }
@@ -795,7 +808,10 @@ export function predict(allPrices, days, macroAdjust = null) {
     const d1s  = d.day1ChangePct > 0 ? '+' : ''
     const d2s  = d.day2ChangePct > 0 ? '+' : ''
 
-    if (d.isConfirmed) {
+    if (d.status === 'WEAK_CONFIRMED') {
+      score += 1
+      signals.push(`2日目確認（弱）：上昇継続（${d2s}${d.day2ChangePct}%）したが上ヒゲ${d.upperShadowPct}%あり→引けに売り圧力。CT理論「高値引けでないDay2は即時エントリーせずDay3を待つ」`)
+    } else if (d.isConfirmed) {
       score += d.day1Dir > 0 ? 2 : -2
       if (d.day1Dir > 0) {
         signals.push(`2日目確認：前日の上昇（${d1s}${d.day1ChangePct}%）が翌日も継続（${d2s}${d.day2ChangePct}%）→CT理論「信頼度4倍」の確定シグナル`)
@@ -831,11 +847,15 @@ export function predict(allPrices, days, macroAdjust = null) {
     const iv = initialVelocity
     const d2 = day2Confirmation
 
-    // CT最強シグナル：初速超高速 + 2日目確認
+    // CT最強シグナル：初速超高速 + 2日目確認（高値引け）
     if (iv?.level === 'VERY_HIGH' && iv.isAligned && iv.currentDir > 0
-        && d2?.isConfirmed && d2.day1Dir > 0) {
+        && d2?.status === 'CONFIRMED' && d2.day1Dir > 0) {
       outlook = 'LIKELY_UP'
       text = `初速超高速（${iv.velocityPct > 0 ? '+' : ''}${iv.velocityPct}%/2日）かつ2日目確認済みという「CT理論最強シグナル」が揃っています。トレンド開始時の速度が速く、翌日も継続したことは機関投資家の本格参入を示します。慣性の法則が強く発動しており、1か月後の上昇継続が非常に期待できます。`
+    // 2日目確認（弱）：上ヒゲあり→Day3を待つ
+    } else if (d2?.status === 'WEAK_CONFIRMED' && d2.day1Dir > 0) {
+      outlook = 'UNCERTAIN'
+      text = `Day2は陽線で継続しましたが、高値から${d2.upperShadowPct}%の上ヒゲが出ました。CT理論では「高値引けでないDay2は即時エントリーせず、翌日（Day3）の値動きを確認してから判断する」が原則です。スクリーニングスコアは高く監視対象として有力ですが、エントリーはDay3の確認後に行ってください。`
     // 騙しシグナル警告：前日上昇→今日反転
     } else if (d2?.status === 'REJECTED' && d2.day1Dir > 0 && score < 4) {
       outlook = 'UNCERTAIN'
