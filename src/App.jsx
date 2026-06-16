@@ -302,8 +302,16 @@ function BreakoutVolumeDisplay({ p }) {
   const pct = ((rv - 1) * 100).toFixed(0)
   let cls, label, detail
   if (rv > 2.5) {
-    cls = 'bv-danger'; label = '⚠ 出来高急増（反転リスク）'
-    detail = `平均の${(rv * 100).toFixed(0)}%：高値つかみに注意`
+    if (p.sectorSurging === true) {
+      cls = 'bv-breakout'; label = `⚡ セクター全体で出来高急増（+${pct}%）`
+      detail = `同セクター${p.sectorSurgeCount}/${p.sectorSurgeTotal}銘柄で同時急増 — 機関投資家のセクター一斉参入（本物のブレイクアウト）`
+    } else if (p.sectorSurging === false) {
+      cls = 'bv-danger'; label = '⚠ 出来高急増（単独・反転リスク）'
+      detail = `平均の${(rv * 100).toFixed(0)}%：セクター他銘柄は平常 — 単独急増は高値つかみに注意`
+    } else {
+      cls = 'bv-danger'; label = '⚠ 出来高急増（反転リスク）'
+      detail = `平均の${(rv * 100).toFixed(0)}%：高値つかみに注意`
+    }
   } else if (rv > 1.4 && up) {
     cls = 'bv-breakout'; label = `✅ ブレイクアウト確認（+${pct}%）`
     detail = `O'Neil基準クリア（+40%以上）— 機関投資家の本格参入`
@@ -1260,7 +1268,8 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
     setIsScanning(true); setError(null); setResults(null); setSectorTops(null)
     setProgress({ current: 0, total: CT_UNIVERSE.length })
 
-    const allResults = []
+    // Pass 1: 全銘柄の価格データを取得（ネットワーク）
+    const rawData = []
 
     for (let i = 0; i < CT_UNIVERSE.length; i += BATCH) {
       const batch = CT_UNIVERSE.slice(i, i + BATCH)
@@ -1270,16 +1279,37 @@ function CTScreenerPanel({ gasUrl, onSelectTicker, onSelectSet, onRecordTrade })
       settled.forEach((r, j) => {
         if (r.status === 'fulfilled' && r.value.prices.length >= 20) {
           const s = batch[j]
-          allResults.push({
-            ticker:     s.ticker,
-            name:       r.value.name || s.name,
-            sector:     s.sector,
-            prediction: predict(r.value.prices, 14),
+          rawData.push({
+            ticker: s.ticker,
+            name:   r.value.name || s.name,
+            sector: s.sector,
+            prices: r.value.prices,
           })
         }
       })
       setProgress({ current: Math.min(i + BATCH, CT_UNIVERSE.length), total: CT_UNIVERSE.length })
     }
+
+    // Pass 2: セクター急騰判定（rv > 1.5が同セクター2銘柄以上 = セクター急騰）
+    const sectorRvMap = {}
+    for (const item of rawData) {
+      const rv = predict(item.prices, 14).relativeVolume ?? 0
+      if (!sectorRvMap[item.sector]) sectorRvMap[item.sector] = []
+      sectorRvMap[item.sector].push(rv)
+    }
+    const sectorSurge = {}
+    for (const [sec, rvList] of Object.entries(sectorRvMap)) {
+      const surgeCount = rvList.filter(rv => rv > 1.5).length
+      sectorSurge[sec] = { isSurging: surgeCount >= 2, surgeCount, total: rvList.length }
+    }
+
+    // Pass 3: セクターコンテキスト付きで本番predict実行
+    const allResults = rawData.map(item => ({
+      ticker:     item.ticker,
+      name:       item.name,
+      sector:     item.sector,
+      prediction: predict(item.prices, 14, null, sectorSurge[item.sector] ?? null),
+    }))
 
     // CT理論ソート：①UP優先 ②安定スコア降順 ③規律可能性降順
     const sorted = [...allResults].sort((a, b) => {

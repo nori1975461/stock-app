@@ -624,7 +624,7 @@ export function calcRiskReward(p) {
 }
 
 // macroAdjust は受け入れるが無視（CT理論はセクターマクロをスコアに含めない）
-export function predict(allPrices, days, macroAdjust = null) {
+export function predict(allPrices, days, macroAdjust = null, sectorContext = null) {
   const n        = allPrices.length
   const closes   = allPrices.map(p => p.close)
   const volumes  = allPrices.map(p => p.volume || 0)
@@ -643,8 +643,13 @@ export function predict(allPrices, days, macroAdjust = null) {
 
   if (relativeVolume !== null) {
     if (relativeVolume > 2.5) {
-      score -= 2; stableScore -= 2
-      signals.push(`出来高が平均の${relativeVolume.toFixed(1)}倍：急増は反転シグナル（高値つかみのリスク）`)
+      if (sectorContext?.isSurging) {
+        score += 1; stableScore += 1
+        signals.push(`出来高が平均の${relativeVolume.toFixed(1)}倍：同セクター${sectorContext.surgeCount}/${sectorContext.total}銘柄で同時急増 = 機関投資家のセクター全体への参入シグナル（本物のブレイクアウト）`)
+      } else {
+        score -= 2; stableScore -= 2
+        signals.push(`出来高が平均の${relativeVolume.toFixed(1)}倍：セクター他銘柄は平常水準。単独急増は反転シグナル（高値つかみのリスク）`)
+      }
     } else if (relativeVolume > 1.4 && priceUp) {
       score += 2; stableScore += 2
       signals.push(`出来高 平均比+${((relativeVolume - 1) * 100).toFixed(0)}%で株価上昇：O'Neil基準クリア（+40%以上）の強いブレイクアウト`)
@@ -861,8 +866,13 @@ export function predict(allPrices, days, macroAdjust = null) {
       outlook = 'UNCERTAIN'
       text = `前日の上昇が翌日に否定される「騙しシグナル」が出ています。CLEAR TRADE理論では「2日目に方向が反転した場合、Day1の動きは信頼できない」とします。他のシグナルが強くても、この2日目否定は慎重な姿勢をとるべき警告です。もう数日様子を見てから判断することをお勧めします。`
     } else if (relativeVolume !== null && relativeVolume > 2.5) {
-      outlook = 'LIKELY_DOWN'
-      text = `出来高が通常の${relativeVolume.toFixed(1)}倍という急増は、CLEAR TRADE理論では「天井シグナル」の一つです。大量の売りが出た後に値段が下がることが多く、1か月後の値下がりに注意が必要です。`
+      if (sectorContext?.isSurging) {
+        outlook = 'LIKELY_UP'
+        text = `出来高が通常の${relativeVolume.toFixed(1)}倍という急増ですが、同セクター${sectorContext.surgeCount}/${sectorContext.total}銘柄でも同様に出来高が急増しています。CT理論では「セクター全体の一斉高＋出来高急増 = 機関投資家の本格参入」と解釈します。単独銘柄の反転リスクではなく、ブレイクアウトの信頼性が高まっているサインです。`
+      } else {
+        outlook = 'LIKELY_DOWN'
+        text = `出来高が通常の${relativeVolume.toFixed(1)}倍という急増は、CLEAR TRADE理論では「天井シグナル」の一つです。同セクターの他銘柄では同様の動きが見られず、この銘柄固有の動きと判断します。大量の売りが出た後に値段が下がることが多く、注意が必要です。`
+      }
     } else if (isStagnating && score >= 0) {
       outlook = 'LIKELY_UP'
       text = `上昇後に出来高が減り値動きが静まっています。CLEAR TRADE理論では「停滞＝売り手がいない証拠」と解釈します。売り手不在の静かな状態は次の上昇への準備段階であることが多く、1か月後の上昇が期待できます。${iv?.isAligned && iv.currentDir > 0 && iv.level !== 'LOW' ? `初速も${iv.level === 'VERY_HIGH' ? '超高速' : '高速'}でトレンドの持続力も確認できています。` : ''}`
@@ -904,6 +914,9 @@ export function predict(allPrices, days, macroAdjust = null) {
     stableScore,
     lastClose,
     relativeVolume:   relativeVolume  !== null ? +relativeVolume.toFixed(2)  : null,
+    sectorSurging:    sectorContext !== null ? (sectorContext.isSurging ?? false) : null,
+    sectorSurgeCount: sectorContext?.surgeCount ?? null,
+    sectorSurgeTotal: sectorContext?.total ?? null,
     disciplinaryPct:  disciplinaryPct !== null ? +disciplinaryPct.toFixed(0) : null,
     trendDays,
     obvTrend,
