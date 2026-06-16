@@ -320,9 +320,13 @@ function checkDay2Confirmation(closes, prices) {
     : 0
   const isWeakDay2 = isConfirmed && day1Dir > 0 && upperShadowPct > 5
 
+  // CT理論：Day2が-1.5%〜0%の小幅横ばい = 「保合い=調整完了=買い場」
+  const isStall = !isConfirmed && day1Dir > 0 && day2ChangePct >= -1.5 && day2ChangePct < 0
+
   let status
   if (isWeakDay2)       status = 'WEAK_CONFIRMED'
   else if (isConfirmed) status = 'CONFIRMED'
+  else if (isStall)     status = 'STALL_CONFIRMED'
   else                  status = 'REJECTED'
 
   return {
@@ -826,6 +830,9 @@ export function predict(allPrices, days, macroAdjust = null, sectorContext = nul
     if (d.status === 'WEAK_CONFIRMED') {
       score += 1
       signals.push(`2日目確認（弱）：上昇継続（${d2s}${d.day2ChangePct}%）したが上ヒゲ${d.upperShadowPct}%あり→引けに売り圧力。CT理論「高値引けでないDay2は即時エントリーせずDay3を待つ」`)
+    } else if (d.status === 'STALL_CONFIRMED') {
+      score += 2; stableScore += 1
+      signals.push(`保合い確認（調整完了）：Day1上昇（${d1s}${d.day1ChangePct}%）の翌日が小幅横ばい（${d.day2ChangePct}%）= ブレイクアウト維持・売り圧力を吸収 = 買い場。CT理論「翌日の保合いは調整完了の証拠」`)
     } else if (d.isConfirmed) {
       score += d.day1Dir > 0 ? 2 : -2
       if (d.day1Dir > 0) {
@@ -867,6 +874,10 @@ export function predict(allPrices, days, macroAdjust = null, sectorContext = nul
         && d2?.status === 'CONFIRMED' && d2.day1Dir > 0) {
       outlook = 'LIKELY_UP'
       text = `初速超高速（${iv.velocityPct > 0 ? '+' : ''}${iv.velocityPct}%/2日）かつ2日目確認済みという「CT理論最強シグナル」が揃っています。トレンド開始時の速度が速く、翌日も継続したことは機関投資家の本格参入を示します。慣性の法則が強く発動しており、1か月後の上昇継続が非常に期待できます。`
+    // 保合い確認：CT理論「調整完了=買い場」
+    } else if (d2?.status === 'STALL_CONFIRMED') {
+      outlook = 'LIKELY_UP'
+      text = `Day1のブレイクアウト後、翌日が小幅横ばい（${d2.day2ChangePct}%）で推移しました。CT理論では「保合い＝調整完了＝買い場」と定義します。売り圧力を吸収しながら値を保った = 慣性が残っている証拠です。エントリーを検討できる状態です。`
     // 2日目確認（弱）：上ヒゲあり→Day3を待つ
     } else if (d2?.status === 'WEAK_CONFIRMED' && d2.day1Dir > 0) {
       outlook = 'UNCERTAIN'
