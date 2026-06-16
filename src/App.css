@@ -3078,6 +3078,12 @@ details:not([open]) .screener-results-toggle::before { content: '▶ '; }
 .ej-badge-desc { font-size: 0.82rem; line-height: 1.45; margin: 0; }
 .ej-badge-timing { font-size: 0.80rem; line-height: 1.4; margin: 6px 0 0; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.08); opacity: 0.85; }
 
+/* ─── Day2確認ランクバー ─────────────── */
+.d2-rank-bar { display: flex; align-items: center; gap: 3px; margin-top: 4px; }
+.d2-rank-item { font-size: 0.70rem; padding: 1px 6px; border-radius: 10px; opacity: 0.30; border: 1px solid transparent; white-space: nowrap; }
+.d2-rank-item.d2-rank-active { opacity: 1; font-weight: 700; background: rgba(39,174,96,0.15); border-color: rgba(39,174,96,0.5); color: #1a6e35; }
+.d2-rank-sep { font-size: 0.65rem; opacity: 0.25; }
+
 .ej-badge-compact {
   display: inline-block;
   font-size: 0.78rem;

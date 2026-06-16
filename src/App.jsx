@@ -609,7 +609,7 @@ function CTMetrics({ p }) {
             </>
           )}
           {d2 !== null && d2.status !== 'NO_SIGNAL' && (
-            <div className="metric">
+            <div className="metric metric-d2">
               <span>2日目確認</span>
               <div className="metric-val-wrap">
                 <strong className={
@@ -625,6 +625,15 @@ function CTMetrics({ p }) {
                    d2.status === 'WEAK_CONFIRMED'                    ? '△ 弱い確認' :
                    d2.day1Dir > 0                                    ? '✗ 否定' : '△ 底打ち?'}
                 </strong>
+                {['CONFIRMED', 'STALL_CONFIRMED', 'WEAK_CONFIRMED'].includes(d2.status) && d2.day1Dir > 0 && (
+                  <div className="d2-rank-bar">
+                    <span className={`d2-rank-item ${d2.status === 'CONFIRMED' ? 'd2-rank-active' : ''}`}>①最強</span>
+                    <span className="d2-rank-sep">›</span>
+                    <span className={`d2-rank-item ${d2.status === 'STALL_CONFIRMED' ? 'd2-rank-active' : ''}`}>②良</span>
+                    <span className="d2-rank-sep">›</span>
+                    <span className={`d2-rank-item ${d2.status === 'WEAK_CONFIRMED' ? 'd2-rank-active' : ''}`}>③要Day3</span>
+                  </div>
+                )}
                 {!d2.isConfirmed && d2.day1Dir < 0 && d2.status !== 'STALL_CONFIRMED' && (
                   <span className="metric-note">1日の跳ね返りかもという不確実性あり</span>
                 )}

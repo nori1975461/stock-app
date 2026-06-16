@@ -829,14 +829,14 @@ export function predict(allPrices, days, macroAdjust = null, sectorContext = nul
 
     if (d.status === 'WEAK_CONFIRMED') {
       score += 1
-      signals.push(`2日目確認（弱）：上昇継続（${d2s}${d.day2ChangePct}%）したが上ヒゲ${d.upperShadowPct}%あり→引けに売り圧力。CT理論「高値引けでないDay2は即時エントリーせずDay3を待つ」`)
+      signals.push(`Day2確認【3段階中3位・要Day3待機】：上昇継続（${d2s}${d.day2ChangePct}%）したが上ヒゲ${d.upperShadowPct}%あり→引けに売り圧力。CT理論「高値引けでないDay2は即時エントリーせずDay3を待つ」 ／ 上位：①最強=確認済み ②良=保合い確認`)
     } else if (d.status === 'STALL_CONFIRMED') {
       score += 2; stableScore += 1
-      signals.push(`保合い確認（調整完了）：Day1上昇（${d1s}${d.day1ChangePct}%）の翌日が小幅横ばい（${d.day2ChangePct}%）= ブレイクアウト維持・売り圧力を吸収 = 買い場。CT理論「翌日の保合いは調整完了の証拠」`)
+      signals.push(`Day2確認【3段階中2位・買い場】保合い確認（調整完了）：Day1上昇（${d1s}${d.day1ChangePct}%）の翌日が横ばい（${d.day2ChangePct}%）= ブレイクアウト維持・売り圧力を吸収 = 買い場。CT理論「翌日の保合いは調整完了の証拠」 ／ 上位：①最強=確認済み`)
     } else if (d.isConfirmed) {
       score += d.day1Dir > 0 ? 2 : -2
       if (d.day1Dir > 0) {
-        signals.push(`2日目確認：前日の上昇（${d1s}${d.day1ChangePct}%）が翌日も継続（${d2s}${d.day2ChangePct}%）→CT理論「信頼度4倍」の確定シグナル`)
+        signals.push(`Day2確認【3段階中1位・最強】：前日の上昇（${d1s}${d.day1ChangePct}%）が翌日も継続（${d2s}${d.day2ChangePct}%）→CT理論「信頼度4倍」の確定シグナル ／ 下位：②良=保合い確認 ③要待機=弱い確認`)
       } else {
         signals.push(`2日目確認（下落）：前日の下落（${d.day1ChangePct}%）が翌日も継続（${d.day2ChangePct}%）→下降トレンド確定、買いは待機`)
       }
