@@ -681,12 +681,22 @@ export function predict(allPrices, days, macroAdjust = null, sectorContext = nul
     }
   }
 
-  // ── OBV（On Balance Volume）────────────────────────────────
-  // 15日窓でノイズを軽減（10日だと1日の外れ値で反転しやすい）
-  const obvTrend = hasVolume ? calcOBVTrend(closes, volumes, 15) : 'FLAT'
+  // ── OBV（On Balance Volume）3目線──────────────────────────
+  // 短期3日・中期15日・長期20日の3目線（CT理論「3目線一致 = 最高エッジ」）
+  const obvTrend   = hasVolume ? calcOBVTrend(closes, volumes, 15) : 'FLAT'
+  const obvShort   = hasVolume ? calcOBVTrend(closes, volumes, 3)  : 'FLAT'
+  const obvLong    = hasVolume ? calcOBVTrend(closes, volumes, 20) : 'FLAT'
+  const obvAllUp   = hasVolume && obvTrend === 'UP'   && obvShort === 'UP'   && obvLong === 'UP'
+  const obvAllDown = hasVolume && obvTrend === 'DOWN' && obvShort === 'DOWN' && obvLong === 'DOWN'
 
   if (hasVolume) {
-    if (obvTrend === 'UP') {
+    if (obvAllUp) {
+      score += 3; stableScore += 3
+      signals.push('⚡ OBV3目線一致（短期3日・中期15日・長期20日すべて上昇）：CT理論で最もエッジが高い場面')
+    } else if (obvAllDown) {
+      score -= 3; stableScore -= 3
+      signals.push('⚠ OBV3目線一致（短期3日・中期15日・長期20日すべて下降）：強い売り圧力が3段階で継続')
+    } else if (obvTrend === 'UP') {
       score += 1; stableScore += 1
       signals.push('OBV（資金フロー）上昇：大口・機関投資家の買いが継続中')
     } else if (obvTrend === 'DOWN') {
@@ -920,6 +930,10 @@ export function predict(allPrices, days, macroAdjust = null, sectorContext = nul
     disciplinaryPct:  disciplinaryPct !== null ? +disciplinaryPct.toFixed(0) : null,
     trendDays,
     obvTrend,
+    obvShort,
+    obvLong,
+    obvAllUp,
+    obvAllDown,
     isStagnating,
     vcpPattern,
     isVolumeRecovery,

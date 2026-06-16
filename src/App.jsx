@@ -340,6 +340,28 @@ function BreakoutVolumeDisplay({ p }) {
   )
 }
 
+function OBVTripleDisplay({ p }) {
+  if (!p.hasVolume) return null
+  if (!p.obvAllUp && !p.obvAllDown) return null
+  const isUp = p.obvAllUp
+  const trendLabel = t => t === 'UP' ? '▲' : t === 'DOWN' ? '▼' : '━'
+  return (
+    <div className={`breakout-vol-section ${isUp ? 'bv-breakout' : 'bv-danger'}`}>
+      <div className="bv-title">OBV 3目線分析（CT理論）</div>
+      <div className="bv-body">
+        <span className="bv-label">
+          {isUp
+            ? '⚡ OBV3目線一致：CT理論で最もエッジが高い場面'
+            : '⚠ OBV3目線一致（下降）：強い売り圧力が3段階で継続'}
+        </span>
+        <span className="bv-detail">
+          短期3日{trendLabel(p.obvShort)}　中期15日{trendLabel(p.obvTrend)}　長期20日{trendLabel(p.obvLong)}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function PositionSizingDisplay({ ticker, p }) {
   const STORAGE_KEY = 'ct_account_balance'
   const [inputVal, setInputVal] = useState(() => localStorage.getItem(STORAGE_KEY) || '')
@@ -538,8 +560,12 @@ function CTMetrics({ p }) {
       <div className="metrics metrics-ext">
         <div className="metric">
           <span>OBV傾向</span>
-          <strong className={p.obvTrend === 'UP' ? 'val-up' : p.obvTrend === 'DOWN' ? 'val-down' : ''}>
-            {p.obvTrend === 'UP' ? '▲ 上昇' : p.obvTrend === 'DOWN' ? '▼ 下降' : '━ 横ばい'}
+          <strong className={p.obvAllUp ? 'val-up' : p.obvAllDown ? 'val-down' : p.obvTrend === 'UP' ? 'val-up' : p.obvTrend === 'DOWN' ? 'val-down' : ''}>
+            {p.obvAllUp
+              ? '⚡ 3目線▲'
+              : p.obvAllDown
+              ? '⚠ 3目線▼'
+              : `${p.obvShort === 'UP' ? '▲' : p.obvShort === 'DOWN' ? '▼' : '━'}短 ${p.obvTrend === 'UP' ? '▲' : p.obvTrend === 'DOWN' ? '▼' : '━'}中 ${p.obvLong === 'UP' ? '▲' : p.obvLong === 'DOWN' ? '▼' : '━'}長`}
           </strong>
         </div>
         <div className="metric">
@@ -2245,6 +2271,8 @@ function DetailCard({ item, onClose }) {
 
       <BreakoutVolumeDisplay p={p} />
 
+      <OBVTripleDisplay p={p} />
+
       <ExitPanel p={p} />
 
       {p.forecast && (
@@ -2653,6 +2681,8 @@ export default function App() {
           <PositionSizingDisplay ticker={result.ticker} p={result} />
 
           <BreakoutVolumeDisplay p={result} />
+
+          <OBVTripleDisplay p={result} />
 
           <ExitPanel p={result} />
 
