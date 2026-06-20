@@ -9,9 +9,18 @@ import { CT_UNIVERSE, CT_LEADERS, LEADER_RANK_LABEL, LEADER_RANK_CLASS, SECTOR_B
 const RANK_LABELS = ['1位', '2位', '3位', '4位', '5位', '6位', '7位', '8位', '9位', '10位']
 const MAX_TICKERS = 10
 
+// 個別株（.T）以外でも円建ての指数（日経平均等）はここに追加する
+const JPY_INDEX_TICKERS = ['^N225']
+
+function isYenTicker(ticker) {
+  if (!ticker) return false
+  const upper = ticker.toUpperCase()
+  return upper.endsWith('.T') || JPY_INDEX_TICKERS.includes(upper)
+}
+
 function fmtPrice(ticker, lastClose) {
   if (lastClose == null) return null
-  if (ticker.toUpperCase().endsWith('.T')) {
+  if (isYenTicker(ticker)) {
     return Math.round(lastClose).toLocaleString() + '円'
   }
   const jpy = Math.round(lastClose * USD_JPY_RATE).toLocaleString()
@@ -257,7 +266,7 @@ function WeekHigh52Display({ ticker, p }) {
   const wh = p.weekHigh52
   if (!wh) return null
 
-  const isJP   = ticker?.endsWith('.T')
+  const isJP   = isYenTicker(ticker)
   const fmtAmt = v => isJP ? Math.round(v).toLocaleString() + '円' : v.toFixed(2) + 'USD'
 
   return (
@@ -371,7 +380,7 @@ function PositionSizingDisplay({ ticker, p }) {
   const rr = calcRiskReward(p)
   if (!rr) return null
 
-  const isJP   = ticker?.endsWith('.T')
+  const isJP   = isYenTicker(ticker)
   const fmtAmt = v => isJP ? Math.round(v).toLocaleString() + '円' : v.toFixed(2) + 'USD'
 
   const saveBalance = () => {
@@ -455,7 +464,7 @@ function RiskRewardDisplay({ ticker, p }) {
   const rr = calcRiskReward(p)
   if (!rr) return null
 
-  const isJP     = ticker?.endsWith('.T')
+  const isJP     = isYenTicker(ticker)
   const currency = isJP ? '円' : 'USD'
   const fmtAmt   = v => isJP ? Math.round(v).toLocaleString() + currency : v.toFixed(2) + currency
   const rrClass  = rr.rrRatio >= 2.0 ? 'rr-good' : rr.rrRatio >= 1.5 ? 'rr-mid' : 'rr-bad'
@@ -2025,7 +2034,7 @@ function TradeJournalPanel({ preFill, onPreFillConsumed }) {
             <div className="tj-prefill-section">
               <div className="tj-prefill-label">CT分析データ（自動記録 — 14項目）</div>
               {autoData.lastClose != null && (() => {
-                const isUS  = !autoData.ticker.endsWith('.T')
+                const isUS  = !isYenTicker(autoData.ticker)
                 const jpyVal = isUS
                   ? Math.round(autoData.lastClose * USD_JPY_RATE)
                   : Math.round(autoData.lastClose)
@@ -2128,7 +2137,7 @@ function TradeJournalPanel({ preFill, onPreFillConsumed }) {
                 onChange={e => setEntryPrice(e.target.value)}
                 placeholder={autoData?.lastClose != null
                   ? (() => {
-                      const isUS = !autoData.ticker.endsWith('.T')
+                      const isUS = !isYenTicker(autoData.ticker)
                       const jpyVal = isUS ? Math.round(autoData.lastClose * USD_JPY_RATE) : Math.round(autoData.lastClose)
                       return `参考: ¥${jpyVal.toLocaleString()}`
                     })()

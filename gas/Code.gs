@@ -60,7 +60,9 @@ function doGet(e) {
       .filter(function(p) { return p.close !== null && p.close !== undefined })
 
     var displayName = meta.shortName || meta.longName || ticker
-    if (ticker.toUpperCase().slice(-2) === '.T') {
+    if (ticker.toUpperCase() === '^N225') {
+      displayName = '日経平均株価'
+    } else if (ticker.toUpperCase().slice(-2) === '.T') {
       var jaName = getJapaneseName(ticker)
       if (jaName) displayName = jaName
     }
